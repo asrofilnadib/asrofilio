@@ -77,7 +77,6 @@ function LibraryBrowse({
     const [addBookOpen, setAddBookOpen] = useState(false);
     const [search, setSearch] = useState(filters.search ?? '');
     const activeStatus = filters.status ?? 'all';
-    const hasGenreFilter = (filters.genres?.length ?? 0) > 0;
     const activeSort = filters.sort ?? 'newest';
 
     function handleSearch(e: FormEvent) {
@@ -98,10 +97,6 @@ function LibraryBrowse({
     }
 
     function emptyMessage(): string {
-        if (!hasGenreFilter) {
-            return t('library_empty_genres');
-        }
-
         return filters.scope === 'mine'
             ? t('library_empty_mine')
             : t('library_empty_public');
@@ -197,17 +192,15 @@ function LibraryBrowse({
                             <p className="mt-4 text-muted-foreground">
                                 {emptyMessage()}
                             </p>
-                            {auth.user &&
-                                filters.scope === 'mine' &&
-                                hasGenreFilter && (
-                                    <Button
-                                        className="mt-4"
-                                        onClick={() => setAddBookOpen(true)}
-                                    >
-                                        <Plus className="size-4" />
-                                        {t('library_add_book')}
-                                    </Button>
-                                )}
+                            {auth.user && filters.scope === 'mine' && (
+                                <Button
+                                    className="mt-4"
+                                    onClick={() => setAddBookOpen(true)}
+                                >
+                                    <Plus className="size-4" />
+                                    {t('library_add_book')}
+                                </Button>
+                            )}
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">

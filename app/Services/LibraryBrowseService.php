@@ -68,7 +68,7 @@ class LibraryBrowseService
         }
 
         $genres = $this->getGenres();
-        $this->applyGenreFilter($query, $selectedGenres);
+        $this->applyGenreFilter($query, $selectedGenres, $genres->count());
 
         $sort->applyTo($query);
 
@@ -83,7 +83,7 @@ class LibraryBrowseService
             'filters' => [
                 'search' => $search !== '' ? $search : null,
                 'scope' => $scope,
-                'genres' => $this->filtersGenresPayload($selectedGenres),
+                'genres' => $this->filtersGenresPayload($selectedGenres, $genres->count()),
                 'status' => $status !== '' ? $status : null,
                 'sort' => $sort->value,
             ],
@@ -112,11 +112,9 @@ class LibraryBrowseService
      * @param  Builder<Book>  $query
      * @param  Collection<int, string>  $selectedGenres
      */
-    private function applyGenreFilter(Builder $query, Collection $selectedGenres): void
+    private function applyGenreFilter(Builder $query, Collection $selectedGenres, int $totalGenres): void
     {
-        if ($selectedGenres->isEmpty()) {
-            $query->whereRaw('0 = 1');
-
+        if ($selectedGenres->isEmpty() || $selectedGenres->count() >= $totalGenres) {
             return;
         }
 
@@ -127,9 +125,9 @@ class LibraryBrowseService
      * @param  Collection<int, string>  $selectedGenres
      * @return list<string>|null
      */
-    private function filtersGenresPayload(Collection $selectedGenres): ?array
+    private function filtersGenresPayload(Collection $selectedGenres, int $totalGenres): ?array
     {
-        if ($selectedGenres->isEmpty()) {
+        if ($selectedGenres->isEmpty() || $selectedGenres->count() >= $totalGenres) {
             return null;
         }
 

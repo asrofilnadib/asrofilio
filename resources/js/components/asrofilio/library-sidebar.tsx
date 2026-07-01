@@ -70,7 +70,13 @@ function LibrarySidebar({
             ? current.filter((item) => item !== slug)
             : [...current, slug];
 
-        navigate({ genres: nextChecked.length > 0 ? nextChecked : null });
+        const genresParam =
+            nextChecked.length === 0 ||
+            nextChecked.length >= genreList.length
+                ? null
+                : nextChecked;
+
+        navigate({ genres: genresParam });
     }
 
     function handleScopeChange(next: 'mine' | 'public') {

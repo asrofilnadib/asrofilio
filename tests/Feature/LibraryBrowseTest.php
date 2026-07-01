@@ -4,7 +4,7 @@ use App\Models\Book;
 use App\Models\User;
 use Database\Seeders\GenreSeeder;
 
-test('library shows no books until a genre is selected', function () {
+test('library shows all books when no genre filter is applied', function () {
     $this->seed(GenreSeeder::class);
     $book = Book::factory()->create(['is_public' => true]);
     attachFictionGenre($book);
@@ -13,7 +13,7 @@ test('library shows no books until a genre is selected', function () {
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('library/index')
-            ->has('books.data', 0)
+            ->has('books.data', 1)
             ->where('filters.genres', null)
         );
 });

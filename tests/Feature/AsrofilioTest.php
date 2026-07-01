@@ -16,7 +16,7 @@ test('guest can view home page with public library browse', function () {
     $response->assertOk();
     $response->assertInertia(fn ($page) => $page
         ->component('home/index')
-        ->has('books.data', 0)
+        ->has('books.data', 1)
         ->has('genres', 12)
         ->has('counts')
         ->where('filters.scope', 'public')
@@ -28,7 +28,7 @@ test('guest can browse public library', function () {
     $book = Book::factory()->create(['is_public' => true, 'title' => 'Public Book']);
     attachFictionGenre($book);
 
-    $this->get(route('library.index', ['genres' => ['fiction']]))
+    $this->get(route('library.index'))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('library/index')

@@ -16,7 +16,6 @@ import { AddBookModal } from '@/components/modals/add-book-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
-import { getDailyQuote } from '@/lib/quotes';
 import { paths } from '@/lib/paths';
 import { home } from '@/routes';
 import {
@@ -45,8 +44,15 @@ type DashboardStats = {
     average_session_minutes: number;
 };
 
+type InspirationalQuote = {
+    text: string;
+    author: string;
+    theme: string;
+};
+
 type HomeProps = {
     auth: Auth;
+    inspirationalQuote?: InspirationalQuote;
     books?: Paginated<Book & { user_book?: UserBook | null; userBooks?: UserBook[] }>;
     genres?: Genre[];
     counts?: { mine: number; public: number };
@@ -86,13 +92,13 @@ function GuestHome({
 
 function DashboardHome({
     auth,
+    inspirationalQuote,
     stats,
     currentlyReading,
     recentHighlights,
     recentVocabulary,
 }: HomeProps) {
     const [addBookOpen, setAddBookOpen] = useState(false);
-    const quote = getDailyQuote();
     const featured = currentlyReading?.find((item) => item.book != null);
 
     return (
@@ -106,14 +112,31 @@ function DashboardHome({
                 </p>
             </header>
 
-            <blockquote className="mb-10 border-l-2 border-primary/40 pl-5">
-                <p className="font-serif text-lg leading-relaxed text-foreground/90 italic">
-                    &ldquo;{quote.text}&rdquo;
-                </p>
-                <footer className="mt-2 text-xs font-semibold tracking-widest text-primary uppercase">
-                    {quote.author}
-                </footer>
-            </blockquote>
+            {inspirationalQuote && (
+                <blockquote className="mb-10 border-l-2 border-primary/40 pl-5">
+                    <p className="mb-2 text-[10px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+                        {inspirationalQuote.theme.charAt(0).toUpperCase() +
+                            inspirationalQuote.theme.slice(1)}
+                    </p>
+                    <p className="font-serif text-lg leading-relaxed text-foreground/90 italic">
+                        &ldquo;{inspirationalQuote.text}&rdquo;
+                    </p>
+                    <footer className="mt-2 text-xs font-semibold tracking-widest text-primary uppercase">
+                        {inspirationalQuote.author}
+                    </footer>
+                    <p className="mt-3 text-[10px] text-muted-foreground">
+                        Inspirational quotes provided by{' '}
+                        <a
+                            href="https://zenquotes.io/"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="underline hover:text-foreground"
+                        >
+                            ZenQuotes API
+                        </a>
+                    </p>
+                </blockquote>
+            )}
 
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="space-y-6 lg:col-span-2">

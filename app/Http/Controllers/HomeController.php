@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ReadingStatus;
 use App\Models\UserBook;
 use App\Services\AnalyticsService;
+use App\Services\InspirationalQuoteService;
 use App\Services\LibraryBrowseService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,6 +15,7 @@ class HomeController extends Controller
 {
     public function __construct(
         private AnalyticsService $analytics,
+        private InspirationalQuoteService $inspirationalQuotes,
         private LibraryBrowseService $libraryBrowse,
     ) {}
 
@@ -23,6 +25,7 @@ class HomeController extends Controller
 
         if ($user) {
             return Inertia::render('home/index', [
+                'inspirationalQuote' => $this->inspirationalQuotes->get(),
                 'stats' => $this->analytics->getDashboardStats($user),
                 'currentlyReading' => Inertia::defer(fn () => $user->userBooks()
                     ->withExistingBook()
