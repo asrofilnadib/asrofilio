@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
+import { LanguageSwitcher } from '@/components/asrofilio/language-switcher';
+import { ThemeSwitcher } from '@/components/asrofilio/theme-switcher';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -20,17 +22,22 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { type MessageKey, useI18n } from '@/lib/i18n';
 import { paths } from '@/lib/paths';
 import { cn } from '@/lib/utils';
 import { home, login, logout, register } from '@/routes';
 import type { Auth } from '@/types/auth';
 
-const navLinks: Array<{ label: string; href: string; icon: LucideIcon }> = [
-    { label: 'Home', href: home.url(), icon: Home },
-    { label: 'Library', href: paths.library, icon: Library },
-    { label: 'Highlights', href: paths.highlights, icon: Highlighter },
-    { label: 'Vocabulary', href: paths.vocabulary, icon: BookMarked },
-    { label: 'Analytics', href: paths.analytics, icon: BarChart3 },
+const navLinks: Array<{
+    labelKey: MessageKey;
+    href: string;
+    icon: LucideIcon;
+}> = [
+    { labelKey: 'nav_home', href: home.url(), icon: Home },
+    { labelKey: 'nav_library', href: paths.library, icon: Library },
+    { labelKey: 'nav_highlights', href: paths.highlights, icon: Highlighter },
+    { labelKey: 'nav_vocabulary', href: paths.vocabulary, icon: BookMarked },
+    { labelKey: 'nav_analytics', href: paths.analytics, icon: BarChart3 },
 ];
 
 function isNavActive(currentUrl: string, href: string): boolean {
@@ -43,6 +50,7 @@ function isNavActive(currentUrl: string, href: string): boolean {
 
 function TopNav() {
     const { auth } = usePage<{ auth: Auth }>().props;
+    const { t } = useI18n();
     const currentUrl = usePage().url;
     const user = auth.user;
 
@@ -62,7 +70,7 @@ function TopNav() {
                 </Link>
 
                 <nav className="hidden items-center gap-0.5 rounded-full border border-border/70 bg-card/90 p-1 shadow-sm md:flex">
-                    {navLinks.map(({ label, href, icon: Icon }) => {
+                    {navLinks.map(({ labelKey, href, icon: Icon }) => {
                         const active = isNavActive(currentUrl, href);
 
                         return (
@@ -77,13 +85,16 @@ function TopNav() {
                                 )}
                             >
                                 <Icon className="size-3.5" />
-                                {label}
+                                {t(labelKey)}
                             </Link>
                         );
                     })}
                 </nav>
 
-                <div className="flex items-center justify-self-end gap-2">
+                <div className="flex items-center justify-self-end gap-1">
+                    <LanguageSwitcher />
+                    <ThemeSwitcher />
+
                     {user ? (
                         <>
                             <DropdownMenu>
@@ -114,14 +125,16 @@ function TopNav() {
                                         <>
                                             <DropdownMenuItem asChild>
                                                 <Link href={paths.admin.dashboard}>
-                                                    Admin Panel
+                                                    {t('nav_admin')}
                                                 </Link>
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                         </>
                                     )}
                                     <DropdownMenuItem asChild>
-                                        <Link href={paths.library}>My Library</Link>
+                                        <Link href={paths.library}>
+                                            {t('nav_my_library')}
+                                        </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>
@@ -131,7 +144,7 @@ function TopNav() {
                                             as="button"
                                             className="w-full text-destructive"
                                         >
-                                            Logout
+                                            {t('nav_logout')}
                                         </Link>
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -147,7 +160,7 @@ function TopNav() {
                                     href={logout.url()}
                                     method="post"
                                     as="button"
-                                    title="Logout"
+                                    title={t('nav_logout')}
                                 >
                                     <LogOut className="size-4" />
                                 </Link>
@@ -158,11 +171,13 @@ function TopNav() {
                             <Button variant="ghost" size="sm" asChild>
                                 <Link href={login.url()}>
                                     <LogIn className="size-4" />
-                                    Login
+                                    {t('nav_login')}
                                 </Link>
                             </Button>
                             <Button size="sm" asChild>
-                                <Link href={register.url()}>Register</Link>
+                                <Link href={register.url()}>
+                                    {t('nav_register')}
+                                </Link>
                             </Button>
                         </div>
                     )}
@@ -170,7 +185,7 @@ function TopNav() {
             </div>
 
             <nav className="flex gap-1 overflow-x-auto border-t border-border/40 px-4 py-2 md:hidden">
-                {navLinks.map(({ label, href, icon: Icon }) => {
+                {navLinks.map(({ labelKey, href, icon: Icon }) => {
                     const active = isNavActive(currentUrl, href);
 
                     return (
@@ -185,7 +200,7 @@ function TopNav() {
                             )}
                         >
                             <Icon className="size-3" />
-                            {label}
+                            {t(labelKey)}
                         </Link>
                     );
                 })}

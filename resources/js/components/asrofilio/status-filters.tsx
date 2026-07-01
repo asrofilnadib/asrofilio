@@ -1,10 +1,10 @@
 import { router } from '@inertiajs/react';
 
+import type { LibraryFilters } from '@/components/asrofilio/library-sidebar';
 import { Button } from '@/components/ui/button';
+import { buildLibraryQuery } from '@/lib/library-query';
 import { cn } from '@/lib/utils';
 import type { ReadingStatus } from '@/types/book';
-
-import type { LibraryFilters } from '@/components/asrofilio/library-sidebar';
 
 const filters: Array<{ value: ReadingStatus | 'all'; label: string }> = [
     { value: 'all', label: 'All' },
@@ -30,12 +30,9 @@ function StatusFilters({
     function handleChange(status: ReadingStatus | 'all') {
         router.get(
             basePath,
-            {
-                scope: libraryFilters.scope,
-                genres: libraryFilters.genres ?? undefined,
-                search: libraryFilters.search ?? undefined,
-                status: status === 'all' ? undefined : status,
-            },
+            buildLibraryQuery(libraryFilters, {
+                status: status === 'all' ? null : status,
+            }),
             { preserveState: true, preserveScroll: true },
         );
     }

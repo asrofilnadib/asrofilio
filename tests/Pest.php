@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Book;
+use App\Models\Genre;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -44,7 +46,8 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function attachFictionGenre(Book $book): void
 {
-    // ..
+    $fiction = Genre::query()->where('slug', 'fiction')->firstOrFail();
+    $book->genres()->syncWithoutDetaching([$fiction->id]);
 }

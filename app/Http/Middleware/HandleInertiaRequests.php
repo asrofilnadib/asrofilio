@@ -36,6 +36,7 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'genres' => fn () => Genre::cachedActive(),
+            'locale' => fn () => app()->getLocale(),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

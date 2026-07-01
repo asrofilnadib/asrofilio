@@ -5,6 +5,9 @@ import type { ComponentType, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { Toaster } from '@/components/ui/sonner';
+import { initTheme } from '@/lib/themes';
+
+initTheme();
 
 const appName = import.meta.env.VITE_APP_NAME || 'Asrofilio';
 

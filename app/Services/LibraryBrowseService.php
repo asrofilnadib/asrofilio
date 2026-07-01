@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\LibrarySort;
 use App\Enums\ReadingStatus;
 use App\Models\Book;
 use App\Models\Genre;
@@ -22,7 +23,8 @@ class LibraryBrowseService
      *         search: string|null,
      *         scope: 'mine'|'public',
      *         genres: list<string>|null,
-     *         status: string|null
+     *         status: string|null,
+     *         sort: string
      *     }
      * }
      */
@@ -36,6 +38,7 @@ class LibraryBrowseService
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
         $selectedGenres = $this->resolveSelectedGenres($request);
+        $sort = LibrarySort::tryFrom($request->string('sort')->toString()) ?? LibrarySort::Newest;
 
         $query = Book::query()
             ->with(['genres', 'language', 'tags']);
@@ -65,10 +68,11 @@ class LibraryBrowseService
         }
 
         $genres = $this->getGenres();
-        $this->applyGenreFilter($query, $selectedGenres, $genres->count());
+        $this->applyGenreFilter($query, $selectedGenres);
+
+        $sort->applyTo($query);
 
         $books = $query
-            ->latest()
             ->paginate(12)
             ->withQueryString();
 
@@ -79,8 +83,9 @@ class LibraryBrowseService
             'filters' => [
                 'search' => $search !== '' ? $search : null,
                 'scope' => $scope,
-                'genres' => $this->filtersGenresPayload($selectedGenres, $genres->count()),
+                'genres' => $this->filtersGenresPayload($selectedGenres),
                 'status' => $status !== '' ? $status : null,
+                'sort' => $sort->value,
             ],
         ];
     }
@@ -107,9 +112,11 @@ class LibraryBrowseService
      * @param  Builder<Book>  $query
      * @param  Collection<int, string>  $selectedGenres
      */
-    private function applyGenreFilter($query, Collection $selectedGenres, int $totalGenres): void
+    private function applyGenreFilter(Builder $query, Collection $selectedGenres): void
     {
-        if ($selectedGenres->isEmpty() || $selectedGenres->count() >= $totalGenres) {
+        if ($selectedGenres->isEmpty()) {
+            $query->whereRaw('0 = 1');
+
             return;
         }
 
@@ -120,9 +127,9 @@ class LibraryBrowseService
      * @param  Collection<int, string>  $selectedGenres
      * @return list<string>|null
      */
-    private function filtersGenresPayload(Collection $selectedGenres, int $totalGenres): ?array
+    private function filtersGenresPayload(Collection $selectedGenres): ?array
     {
-        if ($selectedGenres->isEmpty() || $selectedGenres->count() >= $totalGenres) {
+        if ($selectedGenres->isEmpty()) {
             return null;
         }
 

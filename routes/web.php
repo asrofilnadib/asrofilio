@@ -15,6 +15,7 @@ use App\Http\Controllers\HighlightController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\NoteController;
+use App\Http\Controllers\PreferenceController;
 use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\ReaderController;
 use App\Http\Controllers\UserBookController;
@@ -22,6 +23,8 @@ use App\Http\Controllers\VocabularyController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::post('/preferences/locale', [PreferenceController::class, 'locale'])->name('preferences.locale');
 
 Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
 Route::get('/books/{book}/cover', [BookCoverController::class, 'show'])->name('books.cover');

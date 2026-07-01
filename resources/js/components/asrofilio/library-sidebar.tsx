@@ -3,15 +3,26 @@ import { Book, BookOpen } from 'lucide-react';
 
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useI18n } from '@/lib/i18n';
+import { buildLibraryQuery } from '@/lib/library-query';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';
 import type { Genre, ReadingStatus } from '@/types/book';
+
+type LibrarySort =
+    | 'newest'
+    | 'oldest'
+    | 'title_asc'
+    | 'title_desc'
+    | 'author_asc'
+    | 'author_desc';
 
 type LibraryFilters = {
     scope: 'mine' | 'public';
     genres?: string[] | null;
     status?: ReadingStatus | null;
     search?: string | null;
+    sort?: LibrarySort | null;
 };
 
 type LibrarySidebarProps = {
@@ -33,57 +44,33 @@ function LibrarySidebar({
     filters,
     isGuest = false,
 }: LibrarySidebarProps) {
+    const { t } = useI18n();
     const genreList = Array.isArray(genres) ? genres : [];
-    const allSlugs = genreList.map((genre) => genre.slug);
 
     function isGenreChecked(slug: string): boolean {
-        if (!filters.genres || filters.genres.length === 0) {
-            return true;
-        }
-
-        if (filters.genres.length >= allSlugs.length) {
-            return true;
-        }
-
-        return filters.genres.includes(slug);
+        return filters.genres?.includes(slug) ?? false;
     }
 
-    function navigate(overrides: Partial<LibraryFilters> & { scope?: 'mine' | 'public' }) {
-        const nextScope = overrides.scope ?? scope;
-        const nextGenres = overrides.genres !== undefined ? overrides.genres : filters.genres;
-        const nextStatus = overrides.status !== undefined ? overrides.status : filters.status;
-        const nextSearch = overrides.search !== undefined ? overrides.search : filters.search;
-
+    function navigate(
+        overrides: Partial<LibraryFilters> & { scope?: 'mine' | 'public' },
+    ) {
         router.get(
             basePath,
-            {
-                scope: nextScope,
-                genres: nextGenres && nextGenres.length > 0 ? nextGenres : undefined,
-                status: nextStatus ?? undefined,
-                search: nextSearch ?? undefined,
-            },
+            buildLibraryQuery(
+                { ...filters, scope },
+                overrides,
+            ),
             { preserveState: true, preserveScroll: true },
         );
     }
 
     function toggleGenre(slug: string) {
-        const checkedSlugs = genreList
-            .filter((genre) => isGenreChecked(genre.slug))
-            .map((genre) => genre.slug);
+        const current = filters.genres ?? [];
+        const nextChecked = current.includes(slug)
+            ? current.filter((item) => item !== slug)
+            : [...current, slug];
 
-        let nextChecked: string[];
-        if (checkedSlugs.includes(slug)) {
-            nextChecked = checkedSlugs.filter((item) => item !== slug);
-        } else {
-            nextChecked = [...checkedSlugs, slug];
-        }
-
-        const genresParam =
-            nextChecked.length === 0 || nextChecked.length === allSlugs.length
-                ? null
-                : nextChecked;
-
-        navigate({ genres: genresParam });
+        navigate({ genres: nextChecked.length > 0 ? nextChecked : null });
     }
 
     function handleScopeChange(next: 'mine' | 'public') {
@@ -114,7 +101,7 @@ function LibrarySidebar({
                     >
                         <span className="flex items-center gap-2">
                             <BookOpen className="size-4" />
-                            My Library
+                            {t('library_my')}
                         </span>
                         <span
                             className={cn(
@@ -139,7 +126,7 @@ function LibrarySidebar({
                     >
                         <span className="flex items-center gap-2">
                             <Book className="size-4" />
-                            Public Library
+                            {t('library_public')}
                         </span>
                         <span
                             className={cn(
@@ -157,7 +144,7 @@ function LibrarySidebar({
 
             <div className="mt-4 rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
                 <p className="mb-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-                    Genre
+                    {t('library_genre')}
                 </p>
                 <ScrollArea className="max-h-[min(28rem,calc(100vh-22rem))] pr-2">
                     <div className="space-y-2">
@@ -179,7 +166,7 @@ function LibrarySidebar({
                         ))}
                         {genreList.length === 0 && (
                             <p className="px-2 text-xs text-muted-foreground">
-                                No genres available
+                                {t('library_no_genres')}
                             </p>
                         )}
                     </div>
@@ -192,7 +179,7 @@ function LibrarySidebar({
                 </div>
                 <p className="text-2xl font-bold tabular-nums">{totalBooks}</p>
                 <p className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground uppercase">
-                    Total books
+                    {t('library_total_books')}
                 </p>
             </div>
         </aside>
@@ -200,4 +187,4 @@ function LibrarySidebar({
 }
 
 export { LibrarySidebar };
-export type { LibraryFilters };
+export type { LibraryFilters, LibrarySort };
