@@ -16,14 +16,14 @@
         'Libre Baskerville', ui-serif, Georgia, Cambria, 'Times New Roman',
         Times, serif;
 
-    /* Folio brand palette */
-    --color-folio-primary: #7d7517;
-    --color-folio-primary-foreground: #faf7f0;
-    --color-folio-brown: #2d2926;
-    --color-folio-cream: #faf7f0;
-    --color-folio-cream-dark: #f0ebe0;
-    --color-folio-olive-light: #a39e4a;
-    --color-folio-olive-dark: #5c5610;
+    /* Asrofilio brand palette */
+    --color-asrofilio-primary: #7d7517;
+    --color-asrofilio-primary-foreground: #faf7f0;
+    --color-asrofilio-brown: #2d2926;
+    --color-asrofilio-cream: #faf7f0;
+    --color-asrofilio-cream-dark: #f0ebe0;
+    --color-asrofilio-olive-light: #a39e4a;
+    --color-asrofilio-olive-dark: #5c5610;
 
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);

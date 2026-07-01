@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
-import { TopNav } from '@/components/folio/top-nav';
-import { PiracyNotice } from '@/components/folio/piracy-notice';
+import { TopNav } from '@/components/asrofilio/top-nav';
+import { PiracyNotice } from '@/components/asrofilio/piracy-notice';
 
 type AppLayoutProps = {
     children: ReactNode;

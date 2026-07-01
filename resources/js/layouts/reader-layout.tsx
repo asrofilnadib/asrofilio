@@ -6,7 +6,7 @@ type ReaderLayoutProps = {
 
 function ReaderLayout({ children }: ReaderLayoutProps) {
     return (
-        <div className="flex h-screen flex-col overflow-hidden bg-folio-cream">
+        <div className="flex h-screen flex-col overflow-hidden bg-asrofilio-cream">
             {children}
         </div>
     );

@@ -3,17 +3,17 @@ import { BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
-type LoadingFolioProps = {
+type LoadingAsrofilioProps = {
     message?: string;
     className?: string;
     variant?: 'page' | 'grid' | 'inline';
 };
 
-function LoadingFolio({
+function LoadingAsrofilio({
     message = 'Loading your library…',
     className,
     variant = 'page',
-}: LoadingFolioProps) {
+}: LoadingAsrofilioProps) {
     if (variant === 'inline') {
         return (
             <div
@@ -67,4 +67,4 @@ function LoadingFolio({
     );
 }
 
-export { LoadingFolio };
+export { LoadingAsrofilio };

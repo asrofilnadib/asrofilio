@@ -48,7 +48,7 @@ function Dashboard({ stats }: DashboardProps) {
                         Dashboard
                     </h1>
                     <p className="mt-1 text-muted-foreground">
-                        Folio administration overview
+                        Asrofilio administration overview
                     </p>
                 </div>
 

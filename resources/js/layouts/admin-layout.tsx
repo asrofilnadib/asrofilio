@@ -42,7 +42,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
                 <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
                     <BookOpen className="size-6 text-primary" />
                     <span className="font-serif text-xl font-bold text-sidebar-foreground">
-                        Folio Admin
+                        Asrofilio Admin
                     </span>
                 </div>
                 <nav className="flex-1 space-y-1 p-4">
@@ -81,7 +81,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
                             className="justify-start"
                             asChild
                         >
-                            <Link href={home.url()}>Back to Folio</Link>
+                            <Link href={home.url()}>Back to Asrofilio</Link>
                         </Button>
                         <Button
                             variant="ghost"

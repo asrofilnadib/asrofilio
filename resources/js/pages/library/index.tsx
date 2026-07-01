@@ -3,10 +3,10 @@ import { BookOpen, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
-import { BookCard } from '@/components/folio/book-card';
-import { BookGrid } from '@/components/folio/book-grid';
-import { LibrarySidebar } from '@/components/folio/library-sidebar';
-import { StatusFilters } from '@/components/folio/status-filters';
+import { BookCard } from '@/components/asrofilio/book-card';
+import { BookGrid } from '@/components/asrofilio/book-grid';
+import { LibrarySidebar } from '@/components/asrofilio/library-sidebar';
+import { StatusFilters } from '@/components/asrofilio/status-filters';
 import { AddBookModal } from '@/components/modals/add-book-modal';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';

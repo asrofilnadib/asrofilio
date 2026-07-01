@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client';
 
 import { Toaster } from '@/components/ui/sonner';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Folio';
+const appName = import.meta.env.VITE_APP_NAME || 'Asrofilio';
 
 type PageModule = {
     default: ComponentType & {

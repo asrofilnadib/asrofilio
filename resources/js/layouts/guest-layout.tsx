@@ -20,7 +20,7 @@ function GuestLayout({ children, title }: GuestLayoutProps) {
                 >
                     <BookOpen className="size-8" />
                     <span className="font-serif text-3xl font-bold tracking-tight">
-                        Folio
+                        Asrofilio
                     </span>
                 </Link>
                 {title && (

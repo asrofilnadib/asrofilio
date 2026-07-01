@@ -3,9 +3,9 @@ import { BookOpen, Plus, TrendingUp } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
-import { BookCard } from '@/components/folio/book-card';
-import { BookGrid } from '@/components/folio/book-grid';
-import { LoadingFolio } from '@/components/folio/loading-folio';
+import { BookCard } from '@/components/asrofilio/book-card';
+import { BookGrid } from '@/components/asrofilio/book-grid';
+import { LoadingAsrofilio } from '@/components/asrofilio/loading-asrofilio';
 import { AddBookModal } from '@/components/modals/add-book-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -150,7 +150,7 @@ function Home({ auth, recentlyAdded, currentlyReading, stats }: HomeProps) {
                         </div>
                         <Deferred
                             data="currentlyReading"
-                            fallback={<LoadingFolio variant="grid" />}
+                            fallback={<LoadingAsrofilio variant="grid" />}
                         >
                             <BookGrid
                                 isEmpty={!currentlyReading?.length}
@@ -182,7 +182,7 @@ function Home({ auth, recentlyAdded, currentlyReading, stats }: HomeProps) {
                     </h2>
                     <Deferred
                         data="recentlyAdded"
-                        fallback={<LoadingFolio variant="grid" />}
+                        fallback={<LoadingAsrofilio variant="grid" />}
                     >
                         <BookGrid
                             isEmpty={!recentlyAdded?.length}

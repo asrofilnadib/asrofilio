@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         User::query()->updateOrCreate(
-            ['email' => 'admin@folio.test'],
+            ['email' => 'admin@asrofilio.test'],
             [
                 'name' => 'Admin User',
                 'password' => Hash::make('password'),
@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
         );
 
         User::query()->updateOrCreate(
-            ['email' => 'user@folio.test'],
+            ['email' => 'user@asrofilio.test'],
             [
                 'name' => 'Test User',
                 'password' => Hash::make('password'),

@@ -37,7 +37,7 @@ function TopNav() {
                     >
                         <BookOpen className="size-7" />
                         <span className="font-serif text-2xl font-bold tracking-tight text-foreground">
-                            Folio
+                            Asrofilio
                         </span>
                     </Link>
                     <nav className="hidden items-center gap-1 md:flex">

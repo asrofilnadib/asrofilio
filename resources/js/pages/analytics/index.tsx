@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 
 import { BooksCompletedChart } from '@/components/charts/books-completed-chart';
 import { VocabularyWordcloud } from '@/components/charts/vocabulary-wordcloud';
-import { LoadingFolio } from '@/components/folio/loading-folio';
+import { LoadingAsrofilio } from '@/components/asrofilio/loading-asrofilio';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import type { AnalyticsPageProps } from '@/types/analytics';
@@ -91,7 +91,7 @@ function AnalyticsIndex({
                             <Deferred
                                 data="booksCompletedChart"
                                 fallback={
-                                    <LoadingFolio
+                                    <LoadingAsrofilio
                                         variant="inline"
                                         message="Loading chart…"
                                     />
@@ -144,7 +144,7 @@ function AnalyticsIndex({
                         <Deferred
                             data="vocabularyWordCloud"
                             fallback={
-                                <LoadingFolio
+                                <LoadingAsrofilio
                                     variant="inline"
                                     message="Building word cloud…"
                                 />

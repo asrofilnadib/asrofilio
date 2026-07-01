@@ -49,12 +49,12 @@ test('guest is redirected from authenticated routes', function () {
 
 test('user can login with valid credentials', function () {
     $user = User::factory()->create([
-        'email' => 'reader@folio.test',
+        'email' => 'reader@asrofilio.test',
         'password' => bcrypt('password'),
     ]);
 
     $response = $this->post(route('login'), [
-        'email' => 'reader@folio.test',
+        'email' => 'reader@asrofilio.test',
         'password' => 'password',
     ]);
 
