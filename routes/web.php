@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/read/{book}/progress', [ReaderController::class, 'updateProgress'])->name('reader.progress');
     Route::post('/read/{book}/chapters', [ReaderController::class, 'storeChapters'])->name('reader.chapters.store');
 
+    Route::post('/user-books', [UserBookController::class, 'create'])->name('user-books.create');
     Route::post('/library/{book}', [UserBookController::class, 'store'])->name('user-books.store');
     Route::patch('/user-books/{userBook}', [UserBookController::class, 'update'])->name('user-books.update');
     Route::delete('/user-books/{userBook}', [UserBookController::class, 'destroy'])->name('user-books.destroy');

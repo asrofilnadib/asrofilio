@@ -3,14 +3,30 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ReadingStatus;
+use App\Http\Requests\StoreLibraryBookRequest;
 use App\Http\Requests\StoreUserBookRequest;
 use App\Http\Requests\UpdateUserBookRequest;
 use App\Models\Book;
 use App\Models\UserBook;
+use App\Services\AddBookToLibraryService;
 use Illuminate\Http\RedirectResponse;
 
 class UserBookController extends Controller
 {
+    public function __construct(
+        private AddBookToLibraryService $addBookToLibrary,
+    ) {}
+
+    public function create(StoreLibraryBookRequest $request): RedirectResponse
+    {
+        $this->addBookToLibrary->add(
+            $request->user(),
+            $request->validated(),
+        );
+
+        return back()->with('success', 'Book added to your library.');
+    }
+
     public function store(StoreUserBookRequest $request, Book $book): RedirectResponse
     {
         $this->authorize('view', $book);

@@ -18,12 +18,6 @@ class ProcessBookUpload implements ShouldQueue
 
     public function handle(BookFileService $bookFileService): void
     {
-        if ($this->book->file_path === null) {
-            Log::warning('ProcessBookUpload: book has no file path', ['book_id' => $this->book->id]);
-
-            return;
-        }
-
         $metadata = $this->book->metadata ?? [];
 
         if (! empty($metadata['cover_url']) && $this->book->cover_path === null) {
@@ -32,6 +26,10 @@ class ProcessBookUpload implements ShouldQueue
             if ($coverPath !== null) {
                 $this->book->update(['cover_path' => $coverPath]);
             }
+        }
+
+        if ($this->book->file_path === null) {
+            return;
         }
 
         Log::info('ProcessBookUpload: book processed', ['book_id' => $this->book->id]);

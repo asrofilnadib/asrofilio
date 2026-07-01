@@ -160,6 +160,27 @@ function AddBookModal({ open, onOpenChange, onSuccess }: AddBookModalProps) {
                                             value={result.open_library_key}
                                         />
                                     )}
+                                    {result.description && (
+                                        <input
+                                            type="hidden"
+                                            name="description"
+                                            value={result.description}
+                                        />
+                                    )}
+                                    {result.page_count != null && (
+                                        <input
+                                            type="hidden"
+                                            name="page_count"
+                                            value={result.page_count}
+                                        />
+                                    )}
+                                    {result.cover_url && (
+                                        <input
+                                            type="hidden"
+                                            name="cover_url"
+                                            value={result.cover_url}
+                                        />
+                                    )}
                                     <button
                                         type="submit"
                                         className="flex w-full items-start gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent"
