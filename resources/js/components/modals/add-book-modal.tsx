@@ -3,6 +3,7 @@ import { Barcode, BookPlus, Search } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -16,7 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { paths } from '@/lib/paths';
-import type { BookSearchResult } from '@/types/book';
+import type { BookSearchResult, BookSearchSource } from '@/types/book';
 
 type AddBookModalProps = {
     open: boolean;
@@ -24,9 +25,24 @@ type AddBookModalProps = {
     onSuccess?: () => void;
 };
 
+const sourceLabels: Record<BookSearchSource, string> = {
+    google_books: 'Google Books',
+    open_library: 'Open Library',
+};
+
+function resultKey(result: BookSearchResult, index: number): string {
+    return (
+        result.google_books_id ??
+        result.open_library_key ??
+        result.isbn ??
+        `${result.title}-${result.author}-${index}`
+    );
+}
+
 function AddBookModal({ open, onOpenChange, onSuccess }: AddBookModalProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<BookSearchResult[]>([]);
+    const [hasSearched, setHasSearched] = useState(false);
 
     const { setData, get: searchBooks, processing: searching } = useHttp({
         q: '',
@@ -39,6 +55,7 @@ function AddBookModal({ open, onOpenChange, onSuccess }: AddBookModalProps) {
         }
 
         setData('q', searchQuery);
+        setHasSearched(true);
         searchBooks(paths.bookSearch, {
             onSuccess: (response) => {
                 const results =
@@ -92,10 +109,17 @@ function AddBookModal({ open, onOpenChange, onSuccess }: AddBookModalProps) {
                                 {searching ? 'Searching…' : 'Search'}
                             </Button>
                         </form>
+                        {hasSearched && searchResults.length > 0 && (
+                            <p className="text-sm text-muted-foreground">
+                                {searchResults.length} result
+                                {searchResults.length !== 1 ? 's' : ''} from
+                                Google Books & Open Library
+                            </p>
+                        )}
                         <div className="max-h-64 space-y-2 overflow-y-auto">
                             {searchResults.map((result, index) => (
                                 <Form
-                                    key={`${result.google_books_id ?? result.isbn ?? index}`}
+                                    key={resultKey(result, index)}
                                     action={paths.userBooks}
                                     method="post"
                                     resetOnSuccess
@@ -129,31 +153,69 @@ function AddBookModal({ open, onOpenChange, onSuccess }: AddBookModalProps) {
                                             value={result.google_books_id}
                                         />
                                     )}
+                                    {result.open_library_key && (
+                                        <input
+                                            type="hidden"
+                                            name="open_library_key"
+                                            value={result.open_library_key}
+                                        />
+                                    )}
                                     <button
                                         type="submit"
                                         className="flex w-full items-start gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent"
                                     >
-                                        {result.cover_url && (
+                                        {result.cover_url ? (
                                             <img
                                                 src={result.cover_url}
                                                 alt=""
-                                                className="size-14 rounded object-cover"
+                                                className="size-14 shrink-0 rounded object-cover"
                                             />
+                                        ) : (
+                                            <div className="flex size-14 shrink-0 items-center justify-center rounded bg-muted text-xs text-muted-foreground">
+                                                No cover
+                                            </div>
                                         )}
                                         <div className="min-w-0 flex-1">
-                                            <p className="font-serif font-medium line-clamp-1">
-                                                {result.title}
-                                            </p>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="font-serif font-medium line-clamp-2">
+                                                    {result.title}
+                                                </p>
+                                                {result.source && (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="shrink-0 text-[10px]"
+                                                    >
+                                                        {
+                                                            sourceLabels[
+                                                                result.source
+                                                            ]
+                                                        }
+                                                    </Badge>
+                                                )}
+                                            </div>
                                             <p className="text-sm text-muted-foreground">
                                                 {result.author}
                                             </p>
+                                            {(result.published_date ||
+                                                result.publisher) && (
+                                                <p className="mt-1 text-xs text-muted-foreground">
+                                                    {[
+                                                        result.published_date,
+                                                        result.publisher,
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(' · ')}
+                                                </p>
+                                            )}
                                         </div>
                                     </button>
                                 </Form>
                             ))}
-                            {searchResults.length === 0 && searchQuery && !searching && (
+                            {hasSearched &&
+                                searchResults.length === 0 &&
+                                !searching && (
                                 <p className="py-8 text-center text-sm text-muted-foreground">
-                                    No results yet. Try a different search.
+                                    No results found. Try a different search.
                                 </p>
                             )}
                         </div>

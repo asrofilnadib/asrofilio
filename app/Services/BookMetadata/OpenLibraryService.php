@@ -10,12 +10,71 @@ class OpenLibraryService
     private const string BASE_URL = 'https://openlibrary.org';
 
     /**
+     * @return list<array<string, mixed>>
+     */
+    public function searchMany(string $query, ?string $author = null, int $limit = 10): array
+    {
+        if (trim($query) === '') {
+            return [];
+        }
+
+        try {
+            $params = [
+                'q' => $query,
+                'limit' => min($limit, 25),
+            ];
+
+            if ($author !== null && $author !== '') {
+                $params['author'] = $author;
+            }
+
+            $response = Http::timeout(10)
+                ->withHeaders($this->requestHeaders())
+                ->get(self::BASE_URL.'/search.json', $params);
+
+            if (! $response->successful()) {
+                return [];
+            }
+
+            $data = $response->json();
+
+            if (! is_array($data) || empty($data['docs'])) {
+                return [];
+            }
+
+            return collect($data['docs'])
+                ->take($limit)
+                ->map(fn (array $doc): array => [
+                    ...$this->normalizeSearchDoc($doc),
+                    'source' => 'open_library',
+                ])
+                ->values()
+                ->all();
+        } catch (ConnectionException) {
+            return [];
+        }
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function requestHeaders(): array
+    {
+        $contact = (string) config('mail.from.address', 'hello@example.com');
+
+        return [
+            'User-Agent' => config('app.name', 'Asrofilio')." ({$contact})",
+        ];
+    }
+
+    /**
      * @return array<string, mixed>|null
      */
     public function searchByIsbn(string $isbn): ?array
     {
         try {
             $response = Http::timeout(10)
+                ->withHeaders($this->requestHeaders())
                 ->get(self::BASE_URL.'/api/books', [
                     'bibkeys' => 'ISBN:'.$isbn,
                     'format' => 'json',
@@ -44,30 +103,9 @@ class OpenLibraryService
      */
     public function searchByTitle(string $title, ?string $author = null): ?array
     {
-        try {
-            $params = ['title' => $title, 'limit' => 1];
+        $results = $this->searchMany($title, $author, 1);
 
-            if ($author !== null) {
-                $params['author'] = $author;
-            }
-
-            $response = Http::timeout(10)
-                ->get(self::BASE_URL.'/search.json', $params);
-
-            if (! $response->successful()) {
-                return null;
-            }
-
-            $data = $response->json();
-
-            if (! is_array($data) || empty($data['docs'][0])) {
-                return null;
-            }
-
-            return $this->normalizeSearchDoc($data['docs'][0]);
-        } catch (ConnectionException) {
-            return null;
-        }
+        return $results[0] ?? null;
     }
 
     /**

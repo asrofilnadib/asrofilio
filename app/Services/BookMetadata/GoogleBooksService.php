@@ -37,28 +37,60 @@ class GoogleBooksService
      */
     public function search(array $params): ?array
     {
+        $results = $this->searchMany(
+            (string) ($params['q'] ?? ''),
+            null,
+            (int) ($params['maxResults'] ?? 1),
+        );
+
+        return $results[0] ?? null;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function searchMany(string $query, ?string $author = null, int $limit = 10): array
+    {
+        if (trim($query) === '') {
+            return [];
+        }
+
+        $searchQuery = $query;
+
+        if ($author !== null && $author !== '') {
+            $searchQuery = 'intitle:'.$query.'+inauthor:'.$author;
+        }
+
         try {
             $apiKey = config('services.google_books.key');
 
             $response = Http::timeout(10)
                 ->get(self::BASE_URL.'/volumes', array_filter([
-                    ...$params,
+                    'q' => $searchQuery,
+                    'maxResults' => min($limit, 40),
                     'key' => $apiKey,
                 ]));
 
             if (! $response->successful()) {
-                return null;
+                return [];
             }
 
             $data = $response->json();
 
-            if (! is_array($data) || empty($data['items'][0])) {
-                return null;
+            if (! is_array($data) || empty($data['items'])) {
+                return [];
             }
 
-            return $this->normalizeVolume($data['items'][0]);
+            return collect($data['items'])
+                ->take($limit)
+                ->map(fn (array $volume): array => [
+                    ...$this->normalizeVolume($volume),
+                    'source' => 'google_books',
+                ])
+                ->values()
+                ->all();
         } catch (ConnectionException) {
-            return null;
+            return [];
         }
     }
 

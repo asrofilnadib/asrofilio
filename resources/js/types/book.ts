@@ -118,6 +118,8 @@ export type VocabularyItem = {
     created_at: string;
 };
 
+export type BookSearchSource = 'google_books' | 'open_library';
+
 export type BookSearchResult = {
     title: string;
     author: string;
@@ -129,6 +131,7 @@ export type BookSearchResult = {
     open_library_key?: string | null;
     published_date?: string | null;
     publisher?: string | null;
+    source?: BookSearchSource;
 };
 
 export type Paginated<T> = {
