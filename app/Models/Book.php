@@ -60,6 +60,13 @@ class Book extends Model
     /** @use HasFactory<BookFactory> */
     use HasFactory, SoftDeletes;
 
+    /**
+     * @var list<string>
+     */
+    protected $appends = [
+        'cover_url',
+    ];
+
     protected static function booted(): void
     {
         static::deleting(function (Book $book): void {
