@@ -2,7 +2,6 @@ import { router } from '@inertiajs/react';
 import { Book, BookOpen } from 'lucide-react';
 
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useI18n } from '@/lib/i18n';
 import { buildLibraryQuery } from '@/lib/library-query';
 import { cn } from '@/lib/utils';
@@ -152,31 +151,32 @@ function LibrarySidebar({
                 <p className="mb-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
                     {t('library_genre')}
                 </p>
-                <ScrollArea className="max-h-[min(28rem,calc(100vh-22rem))] pr-2">
-                    <div className="space-y-2">
+                <div className="max-h-[min(28rem,calc(100vh-22rem))] overflow-y-auto overscroll-contain pr-1 scrollbar-thin [-ms-overflow-style:none] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border/80">
+                    <div className="space-y-0.5 pb-1">
                         {genreList.map((genre) => (
                             <label
                                 key={genre.id}
-                                className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-accent/60"
+                                className="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 text-sm transition-colors hover:bg-accent/60"
                             >
                                 <Checkbox
+                                    className="shrink-0"
                                     checked={isGenreChecked(genre.slug)}
                                     onCheckedChange={() =>
                                         toggleGenre(genre.slug)
                                     }
                                 />
-                                <span className="text-foreground">
+                                <span className="leading-snug text-foreground">
                                     {genre.name}
                                 </span>
                             </label>
                         ))}
                         {genreList.length === 0 && (
-                            <p className="px-2 text-xs text-muted-foreground">
+                            <p className="px-2 py-2 text-xs text-muted-foreground">
                                 {t('library_no_genres')}
                             </p>
                         )}
                     </div>
-                </ScrollArea>
+                </div>
             </div>
 
             <div className="mt-4 rounded-2xl border border-border/70 bg-secondary/60 p-5 text-center shadow-sm">
