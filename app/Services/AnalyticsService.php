@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ReadingStatus;
 use App\Models\User;
+use App\Models\UserBook;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -80,5 +81,42 @@ class AnalyticsService
             ReadingStatus::Scheduled->value => (int) ($counts[ReadingStatus::Scheduled->value] ?? 0),
             ReadingStatus::Completed->value => (int) ($counts[ReadingStatus::Completed->value] ?? 0),
         ];
+    }
+
+    /**
+     * @return list<array{month: string, count: int}>
+     */
+    public function getBooksCompletedChart(User $user): array
+    {
+        return $user->userBooks()
+            ->where('status', ReadingStatus::Completed)
+            ->whereNotNull('completed_at')
+            ->where('completed_at', '>=', now()->subMonths(12))
+            ->get(['completed_at'])
+            ->groupBy(fn (UserBook $userBook): string => $userBook->completed_at->format('M Y'))
+            ->map(fn (Collection $group, string $month): array => [
+                'month' => $month,
+                'count' => $group->count(),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<array{text: string, value: int}>
+     */
+    public function getVocabularyWordCloud(User $user, int $limit = 50): array
+    {
+        return $user->vocabularyItems()
+            ->selectRaw('word, COUNT(*) as value')
+            ->groupBy('word')
+            ->orderByDesc('value')
+            ->limit($limit)
+            ->get()
+            ->map(fn ($row): array => [
+                'text' => $row->word,
+                'value' => (int) $row->value,
+            ])
+            ->all();
     }
 }

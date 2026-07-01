@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\BookCoverController;
 use App\Http\Controllers\BookSearchController;
 use App\Http\Controllers\HighlightController;
 use App\Http\Controllers\HomeController;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/library', [LibraryController::class, 'index'])->name('library.index');
+Route::get('/books/{book}/cover', [BookCoverController::class, 'show'])->name('books.cover');
 Route::get('/library/{book}', [LibraryController::class, 'show'])->name('library.show');
 
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google.redirect');

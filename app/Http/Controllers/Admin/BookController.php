@@ -89,7 +89,7 @@ class BookController extends Controller
             $book->tags()->sync($request->input('tag_ids', []));
         }
 
-        ProcessBookUpload::dispatch($book->fresh());
+        ProcessBookUpload::dispatchSync($book->fresh());
         $this->logCreated($book);
 
         return redirect()->route('admin.books.index')->with('success', 'Book created successfully.');

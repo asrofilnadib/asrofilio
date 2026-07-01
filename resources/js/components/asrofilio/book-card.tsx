@@ -37,7 +37,7 @@ function BookCard({
     showProgress = true,
     className,
 }: BookCardProps) {
-    const coverUrl = book.cover_url ?? book.cover_path;
+    const coverUrl = book.cover_url;
     const status = userBook?.status;
     const progress = userBook?.progress_percent ?? 0;
 

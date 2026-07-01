@@ -49,7 +49,7 @@ function LibraryShow({
     inLibrary,
 }: LibraryShowProps) {
     const [reviewOpen, setReviewOpen] = useState(false);
-    const coverUrl = book.cover_url ?? book.cover_path;
+    const coverUrl = book.cover_url;
 
     return (
         <>

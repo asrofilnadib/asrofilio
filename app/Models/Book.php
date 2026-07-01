@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\BookFileType;
 use Database\Factories\BookFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @property int $id
@@ -23,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $description
  * @property int|null $page_count
  * @property string|null $cover_path
+ * @property-read string|null $cover_url
  * @property string|null $file_path
  * @property BookFileType|null $file_type
  * @property int|null $language_id
@@ -68,6 +71,24 @@ class Book extends Model
             'is_public' => 'boolean',
             'page_count' => 'integer',
         ];
+    }
+
+    /**
+     * @return Attribute<?string, never>
+     */
+    protected function coverUrl(): Attribute
+    {
+        return Attribute::get(function (): ?string {
+            if ($this->cover_path !== null && Storage::disk('local')->exists($this->cover_path)) {
+                return route('books.cover', $this);
+            }
+
+            if (is_array($this->metadata) && ! empty($this->metadata['cover_url'])) {
+                return $this->metadata['cover_url'];
+            }
+
+            return null;
+        });
     }
 
     /**

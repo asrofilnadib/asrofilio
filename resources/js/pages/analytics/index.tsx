@@ -113,9 +113,9 @@ function AnalyticsIndex({
                         <CardContent>
                             <div className="grid grid-cols-2 gap-4">
                                 {(
-                                    Object.entries(statusBreakdown) as Array<
-                                        [string, number]
-                                    >
+                                    Object.entries(
+                                        statusBreakdown ?? {},
+                                    ) as Array<[string, number]>
                                 ).map(([status, count]) => (
                                     <div
                                         key={status}

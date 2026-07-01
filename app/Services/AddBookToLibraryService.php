@@ -91,7 +91,7 @@ class AddBookToLibraryService
             'created_by' => $user->id,
         ]);
 
-        ProcessBookUpload::dispatch($book);
+        ProcessBookUpload::dispatchSync($book);
 
         return $book;
     }

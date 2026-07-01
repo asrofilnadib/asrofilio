@@ -33,19 +33,23 @@ class HomeController extends Controller
                 'currentlyReading' => Inertia::defer(fn () => $user->userBooks()
                     ->with(['book.genres', 'book.language'])
                     ->where('status', ReadingStatus::InProgress)
+                    ->whereHas('book')
                     ->latest('updated_at')
                     ->limit(6)
                     ->get()
                     ->map(fn (UserBook $userBook) => [
                         'book' => $userBook->book,
                         'user_book' => $userBook,
-                    ])),
+                    ])
+                    ->values()),
                 'recentlyAdded' => Inertia::defer(fn () => $user->userBooks()
                     ->with(['book.genres', 'book.language'])
+                    ->whereHas('book')
                     ->latest()
                     ->limit(6)
                     ->get()
-                    ->map(fn (UserBook $userBook) => $userBook->book)),
+                    ->map(fn (UserBook $userBook) => $userBook->book)
+                    ->values()),
             ]);
         }
 

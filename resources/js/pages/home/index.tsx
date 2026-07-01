@@ -164,7 +164,9 @@ function Home({ auth, recentlyAdded, currentlyReading, stats }: HomeProps) {
                                     </div>
                                 }
                             >
-                                {currentlyReading?.map(({ book, user_book }) => (
+                                {currentlyReading
+                                    ?.filter((item) => item.book != null)
+                                    .map(({ book, user_book }) => (
                                     <BookCard
                                         key={book.id}
                                         book={book}
@@ -192,7 +194,9 @@ function Home({ auth, recentlyAdded, currentlyReading, stats }: HomeProps) {
                                 </p>
                             }
                         >
-                            {recentlyAdded?.map((book) => (
+                            {recentlyAdded
+                                ?.filter((book): book is Book => book != null)
+                                .map((book) => (
                                 <BookCard key={book.id} book={book} />
                             ))}
                         </BookGrid>

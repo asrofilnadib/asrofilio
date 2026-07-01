@@ -21,8 +21,14 @@ class AnalyticsController extends Controller
         return Inertia::render('analytics/index', [
             'stats' => $this->analytics->getUserReadingStats($user),
             'dailyActivity' => $this->analytics->getDailyReadingActivity($user, $days),
-            'libraryBreakdown' => $this->analytics->getLibraryStatusBreakdown($user),
+            'statusBreakdown' => $this->analytics->getLibraryStatusBreakdown($user),
             'days' => $days,
+            'booksCompletedChart' => Inertia::defer(
+                fn () => $this->analytics->getBooksCompletedChart($user),
+            ),
+            'vocabularyWordCloud' => Inertia::defer(
+                fn () => $this->analytics->getVocabularyWordCloud($user),
+            ),
         ]);
     }
 }
