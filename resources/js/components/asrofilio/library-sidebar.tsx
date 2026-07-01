@@ -1,43 +1,65 @@
 import { router } from '@inertiajs/react';
-import { Book, BookOpen, ChevronDown } from 'lucide-react';
+import { Book, BookOpen } from 'lucide-react';
 
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
+import { login } from '@/routes';
 import type { Genre, ReadingStatus } from '@/types/book';
 
 type LibraryFilters = {
     scope: 'mine' | 'public';
-    genre?: string | null;
+    genres?: string[] | null;
     status?: ReadingStatus | null;
     search?: string | null;
 };
 
 type LibrarySidebarProps = {
+    basePath: string;
     scope: 'mine' | 'public';
     genres: Genre[];
     counts: { mine: number; public: number };
     totalBooks: number;
     filters: LibraryFilters;
+    isGuest?: boolean;
 };
 
 function LibrarySidebar({
+    basePath,
     scope,
     genres,
     counts,
     totalBooks,
     filters,
+    isGuest = false,
 }: LibrarySidebarProps) {
-    function navigate(overrides: Partial<LibraryFilters>) {
+    const genreList = Array.isArray(genres) ? genres : [];
+    const allSlugs = genreList.map((genre) => genre.slug);
+
+    function isGenreChecked(slug: string): boolean {
+        if (!filters.genres || filters.genres.length === 0) {
+            return true;
+        }
+
+        if (filters.genres.length >= allSlugs.length) {
+            return true;
+        }
+
+        return filters.genres.includes(slug);
+    }
+
+    function navigate(overrides: Partial<LibraryFilters> & { scope?: 'mine' | 'public' }) {
         const nextScope = overrides.scope ?? scope;
-        const nextGenre = overrides.genre !== undefined ? overrides.genre : filters.genre;
+        const nextGenres = overrides.genres !== undefined ? overrides.genres : filters.genres;
         const nextStatus = overrides.status !== undefined ? overrides.status : filters.status;
         const nextSearch = overrides.search !== undefined ? overrides.search : filters.search;
 
         router.get(
-            window.location.pathname,
+            basePath,
             {
                 scope: nextScope,
-                genre: nextGenre ?? undefined,
+                genres: nextGenres && nextGenres.length > 0 ? nextGenres : undefined,
                 status: nextStatus ?? undefined,
                 search: nextSearch ?? undefined,
             },
@@ -45,7 +67,34 @@ function LibrarySidebar({
         );
     }
 
-    const genreList = Array.isArray(genres) ? genres : [];
+    function toggleGenre(slug: string) {
+        const checkedSlugs = genreList
+            .filter((genre) => isGenreChecked(genre.slug))
+            .map((genre) => genre.slug);
+
+        let nextChecked: string[];
+        if (checkedSlugs.includes(slug)) {
+            nextChecked = checkedSlugs.filter((item) => item !== slug);
+        } else {
+            nextChecked = [...checkedSlugs, slug];
+        }
+
+        const genresParam =
+            nextChecked.length === 0 || nextChecked.length === allSlugs.length
+                ? null
+                : nextChecked;
+
+        navigate({ genres: genresParam });
+    }
+
+    function handleScopeChange(next: 'mine' | 'public') {
+        if (isGuest && next === 'mine') {
+            router.get(login.url());
+            return;
+        }
+
+        navigate({ scope: next });
+    }
 
     return (
         <aside className="flex w-full shrink-0 flex-col lg:sticky lg:top-24 lg:w-60 lg:self-start">
@@ -56,7 +105,7 @@ function LibrarySidebar({
                 <div className="space-y-1.5">
                     <button
                         type="button"
-                        onClick={() => navigate({ scope: 'mine' })}
+                        onClick={() => handleScopeChange('mine')}
                         className={cn(
                             'flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-left text-sm font-medium transition-all',
                             scope === 'mine'
@@ -81,7 +130,7 @@ function LibrarySidebar({
                     </button>
                     <button
                         type="button"
-                        onClick={() => navigate({ scope: 'public' })}
+                        onClick={() => handleScopeChange('public')}
                         className={cn(
                             'flex w-full items-center justify-between rounded-xl px-3.5 py-2.5 text-left text-sm font-medium transition-all',
                             scope === 'public'
@@ -108,41 +157,32 @@ function LibrarySidebar({
             </div>
 
             <div className="mt-4 rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between">
-                    <p className="text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
-                        Genre
-                    </p>
-                    <ChevronDown className="size-3.5 text-muted-foreground" />
-                </div>
-                <ScrollArea className="max-h-[min(24rem,calc(100vh-22rem))] pr-2">
-                    <div className="space-y-0.5">
-                        <button
-                            type="button"
-                            onClick={() => navigate({ genre: null })}
-                            className={cn(
-                                'w-full rounded-lg px-3 py-2 text-left text-sm transition-colors',
-                                !filters.genre
-                                    ? 'bg-primary/10 font-medium text-primary'
-                                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                            )}
-                        >
-                            All
-                        </button>
+                <p className="mb-3 text-[11px] font-semibold tracking-[0.14em] text-muted-foreground uppercase">
+                    Genre
+                </p>
+                <ScrollArea className="max-h-[min(28rem,calc(100vh-22rem))] pr-2">
+                    <div className="space-y-2">
                         {genreList.map((genre) => (
-                            <button
+                            <label
                                 key={genre.id}
-                                type="button"
-                                onClick={() => navigate({ genre: genre.slug })}
-                                className={cn(
-                                    'w-full rounded-lg px-3 py-2 text-left text-sm transition-colors',
-                                    filters.genre === genre.slug
-                                        ? 'bg-primary/10 font-medium text-primary'
-                                        : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                                )}
+                                className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-accent/60"
                             >
-                                {genre.name}
-                            </button>
+                                <Checkbox
+                                    checked={isGenreChecked(genre.slug)}
+                                    onCheckedChange={() =>
+                                        toggleGenre(genre.slug)
+                                    }
+                                />
+                                <span className="text-foreground">
+                                    {genre.name}
+                                </span>
+                            </label>
                         ))}
+                        {genreList.length === 0 && (
+                            <p className="px-2 text-xs text-muted-foreground">
+                                No genres available
+                            </p>
+                        )}
                     </div>
                 </ScrollArea>
             </div>

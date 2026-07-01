@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ReadingStatus;
-use App\Models\Book;
 use App\Models\UserBook;
 use App\Services\AnalyticsService;
+use App\Services\LibraryBrowseService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -14,6 +14,7 @@ class HomeController extends Controller
 {
     public function __construct(
         private AnalyticsService $analytics,
+        private LibraryBrowseService $libraryBrowse,
     ) {}
 
     public function index(Request $request): Response
@@ -45,16 +46,16 @@ class HomeController extends Controller
                     ->latest()
                     ->limit(2)
                     ->get()),
+                'booksCompletedChart' => Inertia::defer(
+                    fn () => $this->analytics->getBooksCompletedChart($user),
+                ),
+                'statusBreakdown' => $this->analytics->getLibraryStatusBreakdown($user),
+                'dailyActivity' => Inertia::defer(
+                    fn () => $this->analytics->getDailyReadingActivity($user, 14),
+                ),
             ]);
         }
 
-        return Inertia::render('home/index', [
-            'recentlyAdded' => Inertia::defer(fn () => Book::query()
-                ->where('is_public', true)
-                ->with(['genres', 'language'])
-                ->latest()
-                ->limit(6)
-                ->get()),
-        ]);
+        return Inertia::render('home/index', $this->libraryBrowse->browse($request, 'public'));
     }
 }
