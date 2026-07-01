@@ -1,7 +1,8 @@
 import { Form } from '@inertiajs/react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { BookApiSearchPanel } from '@/components/modals/book-api-search-panel';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -20,9 +21,16 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import {
+    bookToFormValues,
+    emptyFormValues,
+    searchResultToFormValues,
+    type BookFormValues,
+} from '@/lib/book-form';
 import { paths } from '@/lib/paths';
-import type { Book, Genre, Language } from '@/types/book';
+import type { Book, BookSearchResult, Genre, Language } from '@/types/book';
 
 type BookFormModalProps = {
     open: boolean;
@@ -42,11 +50,14 @@ function BookFormModal({
     onSuccess,
 }: BookFormModalProps) {
     const isEditing = Boolean(book);
+    const [values, setValues] = useState<BookFormValues>(emptyFormValues);
 
     useEffect(() => {
         if (!open) {
             return;
         }
+
+        setValues(book ? bookToFormValues(book) : emptyFormValues);
     }, [open, book]);
 
     const action = isEditing
@@ -54,14 +65,32 @@ function BookFormModal({
         : paths.admin.books;
     const method = isEditing ? 'put' : 'post';
 
+    function updateField<K extends keyof BookFormValues>(
+        key: K,
+        value: BookFormValues[K],
+    ) {
+        setValues((current) => ({ ...current, [key]: value }));
+    }
+
+    function applySearchResult(result: BookSearchResult) {
+        setValues(searchResultToFormValues(result, languages));
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
                 <DialogHeader>
                     <DialogTitle className="font-serif">
                         {isEditing ? 'Edit Book' : 'Add Book'}
                     </DialogTitle>
                 </DialogHeader>
+
+                {!isEditing && (
+                    <>
+                        <BookApiSearchPanel onSelect={applySearchResult} />
+                        <Separator />
+                    </>
+                )}
 
                 <Form
                     key={book?.id ?? 'new'}
@@ -79,13 +108,38 @@ function BookFormModal({
                 >
                     {({ errors, processing }) => (
                         <>
+                            {values.google_books_id && (
+                                <input
+                                    type="hidden"
+                                    name="google_books_id"
+                                    value={values.google_books_id}
+                                />
+                            )}
+                            {values.open_library_key && (
+                                <input
+                                    type="hidden"
+                                    name="open_library_key"
+                                    value={values.open_library_key}
+                                />
+                            )}
+                            {values.cover_url && (
+                                <input
+                                    type="hidden"
+                                    name="metadata[cover_url]"
+                                    value={values.cover_url}
+                                />
+                            )}
+
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2 sm:col-span-2">
                                     <Label htmlFor="title">Title</Label>
                                     <Input
                                         id="title"
                                         name="title"
-                                        defaultValue={book?.title}
+                                        value={values.title}
+                                        onChange={(e) =>
+                                            updateField('title', e.target.value)
+                                        }
                                         required
                                     />
                                     {errors.title && (
@@ -99,8 +153,12 @@ function BookFormModal({
                                     <Input
                                         id="subtitle"
                                         name="subtitle"
-                                        defaultValue={
-                                            book?.subtitle ?? undefined
+                                        value={values.subtitle}
+                                        onChange={(e) =>
+                                            updateField(
+                                                'subtitle',
+                                                e.target.value,
+                                            )
                                         }
                                     />
                                 </div>
@@ -109,7 +167,10 @@ function BookFormModal({
                                     <Input
                                         id="author"
                                         name="author"
-                                        defaultValue={book?.author}
+                                        value={values.author}
+                                        onChange={(e) =>
+                                            updateField('author', e.target.value)
+                                        }
                                         required
                                     />
                                     {errors.author && (
@@ -123,7 +184,10 @@ function BookFormModal({
                                     <Input
                                         id="isbn"
                                         name="isbn"
-                                        defaultValue={book?.isbn ?? undefined}
+                                        value={values.isbn}
+                                        onChange={(e) =>
+                                            updateField('isbn', e.target.value)
+                                        }
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -132,9 +196,9 @@ function BookFormModal({
                                     </Label>
                                     <Select
                                         name="language_id"
-                                        defaultValue={
-                                            book?.language_id?.toString() ??
-                                            undefined
+                                        value={values.language_id || undefined}
+                                        onValueChange={(value) =>
+                                            updateField('language_id', value)
                                         }
                                     >
                                         <SelectTrigger>
@@ -158,8 +222,12 @@ function BookFormModal({
                                         id="page_count"
                                         name="page_count"
                                         type="number"
-                                        defaultValue={
-                                            book?.page_count ?? undefined
+                                        value={values.page_count}
+                                        onChange={(e) =>
+                                            updateField(
+                                                'page_count',
+                                                e.target.value,
+                                            )
                                         }
                                     />
                                 </div>
@@ -171,11 +239,30 @@ function BookFormModal({
                                     id="description"
                                     name="description"
                                     rows={3}
-                                    defaultValue={
-                                        book?.description ?? undefined
+                                    value={values.description}
+                                    onChange={(e) =>
+                                        updateField(
+                                            'description',
+                                            e.target.value,
+                                        )
                                     }
                                 />
                             </div>
+
+                            {values.cover_url && (
+                                <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                                    <img
+                                        src={values.cover_url}
+                                        alt=""
+                                        className="size-16 rounded object-cover"
+                                    />
+                                    <p className="text-sm text-muted-foreground">
+                                        Cover from API — saved when you create
+                                        the book. Upload a file below if you
+                                        have one.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="space-y-2">
                                 <Label>Genres</Label>
@@ -203,7 +290,13 @@ function BookFormModal({
                                     id="is_public"
                                     name="is_public"
                                     value="1"
-                                    defaultChecked={book?.is_public ?? false}
+                                    checked={values.is_public}
+                                    onCheckedChange={(checked) =>
+                                        updateField(
+                                            'is_public',
+                                            checked === true,
+                                        )
+                                    }
                                 />
                                 <Label htmlFor="is_public">
                                     Public library

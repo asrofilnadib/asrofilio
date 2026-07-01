@@ -122,6 +122,7 @@ export type BookSearchSource = 'google_books' | 'open_library';
 
 export type BookSearchResult = {
     title: string;
+    subtitle?: string | null;
     author: string;
     isbn?: string | null;
     description?: string | null;
@@ -131,6 +132,7 @@ export type BookSearchResult = {
     open_library_key?: string | null;
     published_date?: string | null;
     publisher?: string | null;
+    language?: string | null;
     source?: BookSearchSource;
 };
 
