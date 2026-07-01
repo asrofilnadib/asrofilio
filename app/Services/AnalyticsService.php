@@ -27,11 +27,13 @@ class AnalyticsService
         $sessionCount = (clone $sessionsQuery)->count();
 
         $booksCompleted = $user->userBooks()
+            ->withExistingBook()
             ->where('status', ReadingStatus::Completed)
             ->whereBetween('completed_at', [$from, $to])
             ->count();
 
         $booksInProgress = $user->userBooks()
+            ->withExistingBook()
             ->where('status', ReadingStatus::InProgress)
             ->count();
 
@@ -71,6 +73,7 @@ class AnalyticsService
     public function getLibraryStatusBreakdown(User $user): array
     {
         $counts = $user->userBooks()
+            ->withExistingBook()
             ->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status');
@@ -89,6 +92,7 @@ class AnalyticsService
     public function getBooksCompletedChart(User $user): array
     {
         return $user->userBooks()
+            ->withExistingBook()
             ->where('status', ReadingStatus::Completed)
             ->whereNotNull('completed_at')
             ->where('completed_at', '>=', now()->subMonths(12))

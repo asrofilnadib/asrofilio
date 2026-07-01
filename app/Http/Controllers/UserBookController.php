@@ -72,6 +72,8 @@ class UserBookController extends Controller
 
         $userBook->delete();
 
-        return back()->with('success', 'Book removed from your library.');
+        return redirect()
+            ->route('library.index', ['scope' => 'mine'])
+            ->with('success', 'Book removed from your library.');
     }
 }

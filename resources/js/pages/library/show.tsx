@@ -1,10 +1,11 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
 import {
     BookOpen,
     Highlighter,
     Play,
     Star,
     StickyNote,
+    Trash2,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
@@ -13,6 +14,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmDeleteDialog } from '@/components/modals/confirm-delete-dialog';
 import {
     Select,
     SelectContent,
@@ -29,9 +31,8 @@ import type { Book, Highlight, Note, ReadingStatus, UserBook } from '@/types/boo
 type LibraryShowProps = {
     book: Book;
     userBook?: UserBook | null;
-    highlights: Highlight[];
-    notes: Note[];
-    inLibrary: boolean;
+    highlights?: Highlight[];
+    notes?: Note[];
 };
 
 const statusOptions: Array<{ value: ReadingStatus; label: string }> = [
@@ -44,12 +45,32 @@ const statusOptions: Array<{ value: ReadingStatus; label: string }> = [
 function LibraryShow({
     book,
     userBook,
-    highlights,
-    notes,
-    inLibrary,
+    highlights = [],
+    notes = [],
 }: LibraryShowProps) {
     const [reviewOpen, setReviewOpen] = useState(false);
+    const [removeOpen, setRemoveOpen] = useState(false);
+    const [removing, setRemoving] = useState(false);
+    const [status, setStatus] = useState<ReadingStatus>(
+        userBook?.status ?? 'unread',
+    );
+    const inLibrary = Boolean(userBook);
     const coverUrl = book.cover_url;
+
+    function confirmRemove() {
+        if (!userBook) {
+            return;
+        }
+
+        setRemoving(true);
+        router.delete(paths.userBook(userBook.id), {
+            onSuccess: () => toast.success('Removed from library'),
+            onFinish: () => {
+                setRemoving(false);
+                setRemoveOpen(false);
+            },
+        });
+    }
 
     return (
         <>
@@ -127,6 +148,15 @@ function LibraryShow({
                                     </Button>
                                 </Form>
                             )}
+                            {inLibrary && userBook && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setRemoveOpen(true)}
+                                >
+                                    <Trash2 className="size-4" />
+                                    Remove from library
+                                </Button>
+                            )}
                         </div>
 
                         {userBook && (
@@ -139,14 +169,23 @@ function LibraryShow({
                                 <CardContent className="space-y-4">
                                     <Form
                                         action={paths.userBook(userBook.id)}
-                                        method="put"
+                                        method="patch"
                                         onSuccess={() =>
                                             toast.success('Status updated')
                                         }
                                     >
-                                        <Select
+                                        <input
+                                            type="hidden"
                                             name="status"
-                                            defaultValue={userBook.status}
+                                            value={status}
+                                        />
+                                        <Select
+                                            value={status}
+                                            onValueChange={(value) =>
+                                                setStatus(
+                                                    value as ReadingStatus,
+                                                )
+                                            }
                                         >
                                             <SelectTrigger className="w-48">
                                                 <SelectValue />
@@ -215,7 +254,7 @@ function LibraryShow({
                                             action={paths.userBook(
                                                 userBook.id,
                                             )}
-                                            method="put"
+                                            method="patch"
                                             onSuccess={() => {
                                                 toast.success('Review saved');
                                                 setReviewOpen(false);
@@ -354,6 +393,16 @@ function LibraryShow({
                     </div>
                 </div>
             </div>
+
+            <ConfirmDeleteDialog
+                open={removeOpen}
+                onOpenChange={setRemoveOpen}
+                onConfirm={confirmRemove}
+                title="Remove from library?"
+                description="This book will be removed from your library. Your highlights and notes will remain unless you delete them separately."
+                confirmLabel="Remove"
+                isLoading={removing}
+            />
         </>
     );
 }

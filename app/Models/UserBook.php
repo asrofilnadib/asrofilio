@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ReadingStatus;
 use Database\Factories\UserBookFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -59,6 +60,15 @@ class UserBook extends Model
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @param  Builder<UserBook>  $query
+     * @return Builder<UserBook>
+     */
+    public function scopeWithExistingBook(Builder $query): Builder
+    {
+        return $query->whereHas('book');
     }
 
     /**

@@ -31,9 +31,9 @@ class HomeController extends Controller
                     'reading_streak' => (int) ($readingStats['session_count'] > 0 ? 1 : 0),
                 ],
                 'currentlyReading' => Inertia::defer(fn () => $user->userBooks()
+                    ->withExistingBook()
                     ->with(['book.genres', 'book.language'])
                     ->where('status', ReadingStatus::InProgress)
-                    ->whereHas('book')
                     ->latest('updated_at')
                     ->limit(6)
                     ->get()
@@ -43,8 +43,8 @@ class HomeController extends Controller
                     ])
                     ->values()),
                 'recentlyAdded' => Inertia::defer(fn () => $user->userBooks()
+                    ->withExistingBook()
                     ->with(['book.genres', 'book.language'])
-                    ->whereHas('book')
                     ->latest()
                     ->limit(6)
                     ->get()

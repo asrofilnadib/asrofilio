@@ -39,7 +39,7 @@ function ReaderShow({
 
     const saveProgress = useCallback(
         (cfiOrPage: string | number) => {
-            router.put(
+            router.patch(
                 paths.userBook(userBook.id),
                 {
                     cfi_location:
