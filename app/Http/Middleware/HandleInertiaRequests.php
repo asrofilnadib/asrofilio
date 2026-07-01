@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use App\Models\Genre;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -36,11 +35,7 @@ class HandleInertiaRequests extends Middleware
                     'avatar' => $request->user()->avatar,
                 ] : null,
             ],
-            'genres' => fn () => Cache::remember(
-                'genres.active',
-                3600,
-                fn () => Genre::active()->get(['id', 'name', 'slug']),
-            ),
+            'genres' => fn () => Genre::cachedActive(),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),

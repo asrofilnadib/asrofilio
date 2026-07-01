@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * @property int $id
@@ -22,6 +24,8 @@ use Illuminate\Support\Carbon;
 #[Fillable(['name', 'slug', 'sort_order', 'is_active'])]
 class Genre extends Model
 {
+    public const CACHE_KEY = 'genres.active.list';
+
     /** @use HasFactory<GenreFactory> */
     use HasFactory;
 
@@ -51,5 +55,31 @@ class Genre extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true)->orderBy('sort_order');
+    }
+
+    /**
+     * @return Collection<int, Genre>
+     */
+    public static function cachedActive(): Collection
+    {
+        /** @var list<array{id: int, name: string, slug: string}> $rows */
+        $rows = Cache::remember(
+            self::CACHE_KEY,
+            3600,
+            fn () => static::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug'])
+                ->toArray(),
+        );
+
+        return static::hydrate($rows);
+    }
+
+    public static function forgetCache(): void
+    {
+        Cache::forget(self::CACHE_KEY);
+        Cache::forget('genres.active');
     }
 }

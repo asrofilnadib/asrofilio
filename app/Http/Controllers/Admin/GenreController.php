@@ -8,7 +8,6 @@ use App\Http\Requests\Admin\StoreGenreRequest;
 use App\Http\Requests\Admin\UpdateGenreRequest;
 use App\Models\Genre;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -39,7 +38,7 @@ class GenreController extends Controller
         $this->authorize('create', Genre::class);
 
         $genre = Genre::create($request->validated());
-        Cache::forget('genres.active');
+        Genre::forgetCache();
         $this->logCreated($genre);
 
         return redirect()->route('admin.genres.index')->with('success', 'Genre created successfully.');
@@ -57,7 +56,7 @@ class GenreController extends Controller
         $this->authorize('update', $genre);
 
         $genre->update($request->validated());
-        Cache::forget('genres.active');
+        Genre::forgetCache();
         $this->logUpdated($genre);
 
         return redirect()->route('admin.genres.index')->with('success', 'Genre updated successfully.');
@@ -69,7 +68,7 @@ class GenreController extends Controller
 
         $this->logDeleted($genre);
         $genre->delete();
-        Cache::forget('genres.active');
+        Genre::forgetCache();
 
         return redirect()->route('admin.genres.index')->with('success', 'Genre deleted successfully.');
     }

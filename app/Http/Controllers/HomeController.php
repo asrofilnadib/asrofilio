@@ -46,13 +46,6 @@ class HomeController extends Controller
                     ->latest()
                     ->limit(2)
                     ->get()),
-                'booksCompletedChart' => Inertia::defer(
-                    fn () => $this->analytics->getBooksCompletedChart($user),
-                ),
-                'statusBreakdown' => $this->analytics->getLibraryStatusBreakdown($user),
-                'dailyActivity' => Inertia::defer(
-                    fn () => $this->analytics->getDailyReadingActivity($user, 14),
-                ),
             ]);
         }
 

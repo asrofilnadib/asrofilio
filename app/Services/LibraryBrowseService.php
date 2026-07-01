@@ -6,16 +6,17 @@ use App\Enums\ReadingStatus;
 use App\Models\Book;
 use App\Models\Genre;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 
 class LibraryBrowseService
 {
     /**
      * @return array{
-     *     books: \Illuminate\Contracts\Pagination\LengthAwarePaginator,
-     *     genres: \Illuminate\Support\Collection<int, Genre>,
+     *     books: LengthAwarePaginator,
+     *     genres: Collection<int, Genre>,
      *     counts: array{mine: int, public: int},
      *     filters: array{
      *         search: string|null,
@@ -89,15 +90,7 @@ class LibraryBrowseService
      */
     private function getGenres(): Collection
     {
-        return Cache::remember(
-            'genres.active',
-            3600,
-            fn () => Genre::query()
-                ->where('is_active', true)
-                ->orderBy('sort_order')
-                ->orderBy('name')
-                ->get(['id', 'name', 'slug']),
-        );
+        return Genre::cachedActive();
     }
 
     /**
@@ -111,7 +104,7 @@ class LibraryBrowseService
     }
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder<Book>  $query
+     * @param  Builder<Book>  $query
      * @param  Collection<int, string>  $selectedGenres
      */
     private function applyGenreFilter($query, Collection $selectedGenres, int $totalGenres): void

@@ -9,9 +9,6 @@ import {
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
-import { BooksCompletedChart } from '@/components/charts/books-completed-chart';
-import { LibraryStatusChart } from '@/components/charts/library-status-chart';
-import { ReadingActivityChart } from '@/components/charts/reading-activity-chart';
 import { LibraryBrowse } from '@/components/asrofilio/library-browse';
 import type { LibraryFilters } from '@/components/asrofilio/library-sidebar';
 import { LoadingAsrofilio } from '@/components/asrofilio/loading-asrofilio';
@@ -29,11 +26,6 @@ import {
     getGreeting,
 } from '@/lib/time';
 import type { Auth } from '@/types/auth';
-import type {
-    BooksCompletedChartPoint,
-    DailyReadingActivity,
-    LibraryStatusBreakdown,
-} from '@/types/analytics';
 import type {
     Book,
     Genre,
@@ -63,9 +55,6 @@ type HomeProps = {
     recentHighlights?: Highlight[];
     recentVocabulary?: VocabularyItem[];
     stats?: DashboardStats;
-    booksCompletedChart?: BooksCompletedChartPoint[];
-    statusBreakdown?: LibraryStatusBreakdown;
-    dailyActivity?: DailyReadingActivity[];
 };
 
 function SectionLabel({ children }: { children: ReactNode }) {
@@ -101,9 +90,6 @@ function DashboardHome({
     currentlyReading,
     recentHighlights,
     recentVocabulary,
-    booksCompletedChart,
-    statusBreakdown,
-    dailyActivity,
 }: HomeProps) {
     const [addBookOpen, setAddBookOpen] = useState(false);
     const quote = getDailyQuote();
@@ -128,62 +114,6 @@ function DashboardHome({
                     {quote.author}
                 </footer>
             </blockquote>
-
-            <div className="mb-8 grid gap-6 lg:grid-cols-2">
-                <Card className="border-border/70 bg-card shadow-sm">
-                    <CardContent className="p-6">
-                        <SectionLabel>Books completed</SectionLabel>
-                        <Deferred
-                            data="booksCompletedChart"
-                            fallback={
-                                <LoadingAsrofilio
-                                    variant="inline"
-                                    message="Loading chart…"
-                                />
-                            }
-                        >
-                            <BooksCompletedChart
-                                data={booksCompletedChart ?? []}
-                                className="mt-2"
-                            />
-                        </Deferred>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-border/70 bg-card shadow-sm">
-                    <CardContent className="p-6">
-                        <SectionLabel>Library status</SectionLabel>
-                        {statusBreakdown ? (
-                            <LibraryStatusChart
-                                data={statusBreakdown}
-                                className="mt-2"
-                            />
-                        ) : (
-                            <LoadingAsrofilio variant="inline" />
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card className="border-border/70 bg-card shadow-sm lg:col-span-2">
-                    <CardContent className="p-6">
-                        <SectionLabel>Reading activity (14 days)</SectionLabel>
-                        <Deferred
-                            data="dailyActivity"
-                            fallback={
-                                <LoadingAsrofilio
-                                    variant="inline"
-                                    message="Loading activity…"
-                                />
-                            }
-                        >
-                            <ReadingActivityChart
-                                data={dailyActivity ?? []}
-                                className="mt-2"
-                            />
-                        </Deferred>
-                    </CardContent>
-                </Card>
-            </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="space-y-6 lg:col-span-2">

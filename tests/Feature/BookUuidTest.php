@@ -3,10 +3,10 @@
 use App\Models\Book;
 use App\Models\User;
 
-test('new books receive a uuid automatically', function () {
+test('new books receive an 8-character public code automatically', function () {
     $book = Book::factory()->create();
 
-    expect($book->uuid)->toBeString()->not->toBeEmpty();
+    expect($book->uuid)->toBeString()->toHaveLength(8);
 });
 
 test('library routes use book uuid instead of numeric id', function () {

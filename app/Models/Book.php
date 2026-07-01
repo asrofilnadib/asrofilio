@@ -73,7 +73,7 @@ class Book extends Model
     {
         static::creating(function (Book $book): void {
             if ($book->uuid === null) {
-                $book->uuid = (string) Str::uuid();
+                $book->uuid = static::generateUniqueCode();
             }
         });
 
@@ -85,6 +85,15 @@ class Book extends Model
     public function getRouteKeyName(): string
     {
         return 'uuid';
+    }
+
+    public static function generateUniqueCode(): string
+    {
+        do {
+            $code = Str::lower(Str::random(8));
+        } while (static::withTrashed()->where('uuid', $code)->exists());
+
+        return $code;
     }
 
     /**

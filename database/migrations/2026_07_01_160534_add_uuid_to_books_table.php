@@ -4,7 +4,6 @@ use App\Models\Book;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -14,14 +13,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('books', function (Blueprint $table) {
-            $table->uuid('uuid')->nullable()->unique()->after('id');
+            $table->string('uuid', 8)->nullable()->unique()->after('id');
         });
 
         Book::query()
             ->withTrashed()
             ->whereNull('uuid')
             ->eachById(function (Book $book): void {
-                $book->forceFill(['uuid' => (string) Str::uuid()])->saveQuietly();
+                $book->forceFill(['uuid' => Book::generateUniqueCode()])->saveQuietly();
             });
     }
 
