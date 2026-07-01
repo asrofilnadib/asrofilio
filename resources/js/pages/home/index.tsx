@@ -9,6 +9,11 @@ import {
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
+import { BooksCompletedChart } from '@/components/charts/books-completed-chart';
+import { LibraryStatusChart } from '@/components/charts/library-status-chart';
+import { ReadingActivityChart } from '@/components/charts/reading-activity-chart';
+import { LibraryBrowse } from '@/components/asrofilio/library-browse';
+import type { LibraryFilters } from '@/components/asrofilio/library-sidebar';
 import { LoadingAsrofilio } from '@/components/asrofilio/loading-asrofilio';
 import { AddBookModal } from '@/components/modals/add-book-modal';
 import { Button } from '@/components/ui/button';
@@ -16,17 +21,24 @@ import { Card, CardContent } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { getDailyQuote } from '@/lib/quotes';
 import { paths } from '@/lib/paths';
+import { home } from '@/routes';
 import {
     formatReadingTime,
     formatRelativeDate,
     formatTodayDate,
     getGreeting,
 } from '@/lib/time';
-import { login } from '@/routes';
 import type { Auth } from '@/types/auth';
 import type {
+    BooksCompletedChartPoint,
+    DailyReadingActivity,
+    LibraryStatusBreakdown,
+} from '@/types/analytics';
+import type {
     Book,
+    Genre,
     Highlight,
+    Paginated,
     UserBook,
     VocabularyItem,
 } from '@/types/book';
@@ -43,11 +55,17 @@ type DashboardStats = {
 
 type HomeProps = {
     auth: Auth;
-    recentlyAdded?: Book[];
+    books?: Paginated<Book & { user_book?: UserBook | null; userBooks?: UserBook[] }>;
+    genres?: Genre[];
+    counts?: { mine: number; public: number };
+    filters?: LibraryFilters & { scope: 'mine' | 'public' };
     currentlyReading?: Array<{ book: Book; user_book: UserBook }>;
     recentHighlights?: Highlight[];
     recentVocabulary?: VocabularyItem[];
     stats?: DashboardStats;
+    booksCompletedChart?: BooksCompletedChartPoint[];
+    statusBreakdown?: LibraryStatusBreakdown;
+    dailyActivity?: DailyReadingActivity[];
 };
 
 function SectionLabel({ children }: { children: ReactNode }) {
@@ -58,65 +76,22 @@ function SectionLabel({ children }: { children: ReactNode }) {
     );
 }
 
-function GuestHome({ recentlyAdded }: Pick<HomeProps, 'recentlyAdded'>) {
+function GuestHome({
+    books,
+    genres,
+    counts,
+    filters,
+}: Required<Pick<HomeProps, 'books' | 'genres' | 'counts' | 'filters'>>) {
     return (
-        <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
-            <section className="mb-10 rounded-2xl border border-border bg-card p-8 lg:p-12">
-                <div className="max-w-2xl">
-                    <h1 className="font-serif text-4xl font-bold tracking-tight text-foreground lg:text-5xl">
-                        Your personal reading sanctuary
-                    </h1>
-                    <p className="mt-4 text-lg text-muted-foreground">
-                        Track your library, highlight passages, build
-                        vocabulary, and dive into EPUB & PDF readers — all in
-                        one place.
-                    </p>
-                    <div className="mt-6 flex flex-wrap gap-3">
-                        <Button size="lg" asChild>
-                            <Link href={login.url()}>Get started</Link>
-                        </Button>
-                        <Button size="lg" variant="outline" asChild>
-                            <Link href={paths.library}>
-                                Browse public library
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-            </section>
-
-            <section>
-                <h2 className="mb-4 font-serif text-2xl font-semibold">
-                    Public library
-                </h2>
-                <Deferred
-                    data="recentlyAdded"
-                    fallback={<LoadingAsrofilio variant="grid" />}
-                >
-                    {!recentlyAdded?.length ? (
-                        <p className="text-muted-foreground">
-                            No books to show yet.
-                        </p>
-                    ) : (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                            {recentlyAdded.map((book) => (
-                                <Link
-                                    key={book.id}
-                                    href={paths.libraryShow(book.id)}
-                                    className="rounded-xl border border-border/70 bg-card p-4 transition-shadow hover:shadow-md"
-                                >
-                                    <p className="font-serif font-semibold">
-                                        {book.title}
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">
-                                        {book.author}
-                                    </p>
-                                </Link>
-                            ))}
-                        </div>
-                    )}
-                </Deferred>
-            </section>
-        </div>
+        <LibraryBrowse
+            basePath={home.url()}
+            books={books}
+            genres={genres}
+            counts={counts}
+            filters={filters}
+            isGuest
+            showPublicBanner
+        />
     );
 }
 
@@ -126,6 +101,9 @@ function DashboardHome({
     currentlyReading,
     recentHighlights,
     recentVocabulary,
+    booksCompletedChart,
+    statusBreakdown,
+    dailyActivity,
 }: HomeProps) {
     const [addBookOpen, setAddBookOpen] = useState(false);
     const quote = getDailyQuote();
@@ -150,6 +128,62 @@ function DashboardHome({
                     {quote.author}
                 </footer>
             </blockquote>
+
+            <div className="mb-8 grid gap-6 lg:grid-cols-2">
+                <Card className="border-border/70 bg-card shadow-sm">
+                    <CardContent className="p-6">
+                        <SectionLabel>Books completed</SectionLabel>
+                        <Deferred
+                            data="booksCompletedChart"
+                            fallback={
+                                <LoadingAsrofilio
+                                    variant="inline"
+                                    message="Loading chart…"
+                                />
+                            }
+                        >
+                            <BooksCompletedChart
+                                data={booksCompletedChart ?? []}
+                                className="mt-2"
+                            />
+                        </Deferred>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border/70 bg-card shadow-sm">
+                    <CardContent className="p-6">
+                        <SectionLabel>Library status</SectionLabel>
+                        {statusBreakdown ? (
+                            <LibraryStatusChart
+                                data={statusBreakdown}
+                                className="mt-2"
+                            />
+                        ) : (
+                            <LoadingAsrofilio variant="inline" />
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border/70 bg-card shadow-sm lg:col-span-2">
+                    <CardContent className="p-6">
+                        <SectionLabel>Reading activity (14 days)</SectionLabel>
+                        <Deferred
+                            data="dailyActivity"
+                            fallback={
+                                <LoadingAsrofilio
+                                    variant="inline"
+                                    message="Loading activity…"
+                                />
+                            }
+                        >
+                            <ReadingActivityChart
+                                data={dailyActivity ?? []}
+                                className="mt-2"
+                            />
+                        </Deferred>
+                    </CardContent>
+                </Card>
+            </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="space-y-6 lg:col-span-2">
@@ -436,8 +470,17 @@ function Home(props: HomeProps) {
     return (
         <>
             <Head title="Home" />
-            {isGuest ? (
-                <GuestHome recentlyAdded={props.recentlyAdded} />
+            {isGuest &&
+            props.books &&
+            props.genres &&
+            props.counts &&
+            props.filters ? (
+                <GuestHome
+                    books={props.books}
+                    genres={props.genres}
+                    counts={props.counts}
+                    filters={props.filters}
+                />
             ) : (
                 <DashboardHome {...props} />
             )}

@@ -2,7 +2,6 @@ import { router } from '@inertiajs/react';
 import { Book, BookOpen } from 'lucide-react';
 
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { login } from '@/routes';

@@ -16,21 +16,23 @@ const filters: Array<{ value: ReadingStatus | 'all'; label: string }> = [
 
 type StatusFiltersProps = {
     active: ReadingStatus | 'all';
-    libraryFilters: LibraryFilters;
+    libraryFilters: LibraryFilters & { scope: 'mine' | 'public' };
+    basePath: string;
     className?: string;
 };
 
 function StatusFilters({
     active,
     libraryFilters,
+    basePath,
     className,
 }: StatusFiltersProps) {
     function handleChange(status: ReadingStatus | 'all') {
         router.get(
-            window.location.pathname,
+            basePath,
             {
                 scope: libraryFilters.scope,
-                genre: libraryFilters.genre ?? undefined,
+                genres: libraryFilters.genres ?? undefined,
                 search: libraryFilters.search ?? undefined,
                 status: status === 'all' ? undefined : status,
             },
