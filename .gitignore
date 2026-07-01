@@ -1,0 +1,58 @@
+# Dependencies
+/node_modules
+/vendor
+
+# Build & generated assets
+/public/build
+/public/hot
+/public/fonts-manifest.dev.json
+/public/storage
+/bootstrap/ssr
+/resources/js/actions
+/resources/js/routes
+/resources/js/wayfinder
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+/auth.json
+/storage/*.key
+
+# Database (local SQLite)
+/database/*.sqlite*
+
+# Storage, cache & logs
+/storage/pail
+/storage/logs/*.log
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+
+# Testing & static analysis
+/.phpunit.cache
+/.phpunit.result.cache
+/.phpstan.cache
+/coverage
+
+# IDE & editor (keep .cursor/skills/ — project-specific)
+/.cursor/mcp.json
+/.fleet
+/.idea
+/.nova
+/.vscode
+/.zed
+.phpactor.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug logs
+npm-debug.log
+yarn-error.log
+*.log
+
+# Homestead
+Homestead.json
+Homestead.yaml
