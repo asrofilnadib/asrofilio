@@ -64,6 +64,7 @@ export type UserBook = {
     scheduled_at?: string | null;
     started_at?: string | null;
     completed_at?: string | null;
+    updated_at?: string | null;
     book?: Book;
 };
 

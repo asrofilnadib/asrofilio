@@ -54,6 +54,37 @@ class AnalyticsService
     }
 
     /**
+     * @return array<string, int|float>
+     */
+    public function getDashboardStats(User $user): array
+    {
+        $libraryBreakdown = $this->getLibraryStatusBreakdown($user);
+        $allTimeSeconds = (int) $user->readingSessions()->sum('duration_seconds');
+        $sessionCount = $user->readingSessions()->count();
+
+        $completedQuery = $user->userBooks()
+            ->withExistingBook()
+            ->where('status', ReadingStatus::Completed)
+            ->whereNotNull('completed_at');
+
+        return [
+            'library_total' => array_sum($libraryBreakdown),
+            'books_completed' => $libraryBreakdown[ReadingStatus::Completed->value],
+            'total_reading_seconds' => $allTimeSeconds,
+            'books_this_month' => (clone $completedQuery)
+                ->whereBetween('completed_at', [now()->startOfMonth(), now()->endOfMonth()])
+                ->count(),
+            'books_this_year' => (clone $completedQuery)
+                ->whereBetween('completed_at', [now()->startOfYear(), now()->endOfYear()])
+                ->count(),
+            'books_all_time' => (clone $completedQuery)->count(),
+            'average_session_minutes' => $sessionCount > 0
+                ? round($allTimeSeconds / $sessionCount / 60, 1)
+                : 0,
+        ];
+    }
+
+    /**
      * @return Collection<int, object>
      */
     public function getDailyReadingActivity(User $user, int $days = 30): Collection
