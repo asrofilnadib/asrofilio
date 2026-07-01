@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\ReadingStatus;
 use App\Models\Book;
 use App\Models\Genre;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
@@ -26,6 +27,10 @@ class LibraryController extends Controller
         $query = Book::query()
             ->with(['genres', 'language', 'tags']);
 
+        if ($user) {
+            $query->with(['userBooks' => fn ($q) => $q->where('user_id', $user->id)]);
+        }
+
         if ($scope === 'mine') {
             $query->whereHas('userBooks', function ($q) use ($user, $status): void {
                 $q->where('user_id', $user->id);
@@ -33,7 +38,7 @@ class LibraryController extends Controller
                 if ($status !== '' && ReadingStatus::tryFrom($status)) {
                     $q->where('status', $status);
                 }
-            })->with(['userBooks' => fn ($q) => $q->where('user_id', $user->id)]);
+            });
         } else {
             $query->where('is_public', true);
         }
@@ -58,19 +63,44 @@ class LibraryController extends Controller
         $genres = Cache::remember(
             'genres.active',
             3600,
-            fn () => Genre::active()->get(['id', 'name', 'slug']),
+            fn () => Genre::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['id', 'name', 'slug']),
         );
 
         return Inertia::render('library/index', [
             'books' => $books,
             'genres' => $genres,
+            'counts' => $this->libraryCounts($user),
             'filters' => [
-                'search' => $search,
+                'search' => $search !== '' ? $search : null,
                 'scope' => $scope,
                 'genre' => $genreSlug !== '' ? $genreSlug : null,
                 'status' => $status !== '' ? $status : null,
             ],
         ]);
+    }
+
+    /**
+     * @return array{mine: int, public: int}
+     */
+    private function libraryCounts(?User $user): array
+    {
+        $publicCount = Book::query()->where('is_public', true)->count();
+
+        $mineCount = 0;
+        if ($user) {
+            $mineCount = $user->userBooks()
+                ->withExistingBook()
+                ->count();
+        }
+
+        return [
+            'mine' => $mineCount,
+            'public' => $publicCount,
+        ];
     }
 
     public function show(Request $request, Book $book): Response

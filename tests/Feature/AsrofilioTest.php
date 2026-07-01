@@ -3,6 +3,7 @@
 use App\Enums\UserRole;
 use App\Models\Book;
 use App\Models\User;
+use Database\Seeders\GenreSeeder;
 use Illuminate\Support\Facades\Http;
 
 test('guest can view home page', function () {
@@ -12,6 +13,7 @@ test('guest can view home page', function () {
 });
 
 test('guest can browse public library', function () {
+    $this->seed(GenreSeeder::class);
     $book = Book::factory()->create(['is_public' => true, 'title' => 'Public Book']);
 
     $response = $this->get(route('library.index'));
@@ -20,7 +22,8 @@ test('guest can browse public library', function () {
     $response->assertInertia(fn ($page) => $page
         ->component('library/index')
         ->has('books.data', 1)
-        ->has('genres')
+        ->has('genres', 12)
+        ->has('counts')
         ->where('filters.scope', 'public')
     );
 });

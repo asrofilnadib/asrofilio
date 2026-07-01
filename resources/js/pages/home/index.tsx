@@ -3,7 +3,6 @@ import {
     BarChart3,
     BookOpen,
     Clock,
-    Highlighter,
     Library,
     Plus,
 } from 'lucide-react';

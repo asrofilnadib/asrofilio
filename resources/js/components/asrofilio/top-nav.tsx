@@ -10,6 +10,7 @@ import {
     LogOut,
     User,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +24,6 @@ import { paths } from '@/lib/paths';
 import { cn } from '@/lib/utils';
 import { home, login, logout, register } from '@/routes';
 import type { Auth } from '@/types/auth';
-import type { LucideIcon } from 'lucide-react';
 
 const navLinks: Array<{ label: string; href: string; icon: LucideIcon }> = [
     { label: 'Home', href: home.url(), icon: Home },
@@ -47,7 +47,7 @@ function TopNav() {
     const user = auth.user;
 
     return (
-        <header className="sticky top-0 z-40 border-b border-border/50 bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
+        <header className="sticky top-0 z-40 border-b border-border/50 bg-background/85 backdrop-blur-md supports-backdrop-filter:bg-background/70">
             <div className="mx-auto grid h-16 max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 lg:px-8">
                 <Link
                     href={home.url()}

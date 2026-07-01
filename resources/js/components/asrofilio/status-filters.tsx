@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ReadingStatus } from '@/types/book';
 
+import type { LibraryFilters } from '@/components/asrofilio/library-sidebar';
+
 const filters: Array<{ value: ReadingStatus | 'all'; label: string }> = [
     { value: 'all', label: 'All' },
     { value: 'in_progress', label: 'Reading' },
@@ -14,20 +16,24 @@ const filters: Array<{ value: ReadingStatus | 'all'; label: string }> = [
 
 type StatusFiltersProps = {
     active: ReadingStatus | 'all';
-    onChange?: (status: ReadingStatus | 'all') => void;
+    libraryFilters: LibraryFilters;
     className?: string;
 };
 
-function StatusFilters({ active, onChange, className }: StatusFiltersProps) {
+function StatusFilters({
+    active,
+    libraryFilters,
+    className,
+}: StatusFiltersProps) {
     function handleChange(status: ReadingStatus | 'all') {
-        if (onChange) {
-            onChange(status);
-            return;
-        }
-
         router.get(
             window.location.pathname,
-            { status: status === 'all' ? undefined : status },
+            {
+                scope: libraryFilters.scope,
+                genre: libraryFilters.genre ?? undefined,
+                search: libraryFilters.search ?? undefined,
+                status: status === 'all' ? undefined : status,
+            },
             { preserveState: true, preserveScroll: true },
         );
     }
@@ -40,6 +46,7 @@ function StatusFilters({ active, onChange, className }: StatusFiltersProps) {
                     type="button"
                     size="sm"
                     variant={active === value ? 'default' : 'outline'}
+                    className="rounded-full"
                     onClick={() => handleChange(value)}
                 >
                     {label}
