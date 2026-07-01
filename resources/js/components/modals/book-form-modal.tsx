@@ -61,7 +61,7 @@ function BookFormModal({
     }, [open, book]);
 
     const action = isEditing
-        ? paths.admin.book(book!.id)
+        ? paths.admin.book(book!.uuid)
         : paths.admin.books;
     const method = isEditing ? 'put' : 'post';
 

@@ -1,6 +1,6 @@
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
 import { useMemo } from 'react';
+
+import { HighchartsChart } from '@/components/charts/highcharts-chart';
 
 type ActivityPoint = {
     date: string;
@@ -13,7 +13,7 @@ type AdminActivityChartProps = {
 };
 
 function AdminActivityChart({ data, className }: AdminActivityChartProps) {
-    const options = useMemo<Highcharts.Options>(
+    const options = useMemo(
         () => ({
             chart: {
                 type: 'line',
@@ -69,7 +69,7 @@ function AdminActivityChart({ data, className }: AdminActivityChartProps) {
 
     return (
         <div className={className}>
-            <HighchartsReact highcharts={Highcharts} options={options} />
+            <HighchartsChart options={options} />
         </div>
     );
 }

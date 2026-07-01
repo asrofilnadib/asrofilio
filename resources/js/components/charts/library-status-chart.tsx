@@ -1,7 +1,6 @@
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
 import { useMemo } from 'react';
 
+import { HighchartsChart } from '@/components/charts/highcharts-chart';
 import type { LibraryStatusBreakdown } from '@/types/analytics';
 
 const statusLabels: Record<keyof LibraryStatusBreakdown, string> = {
@@ -31,7 +30,7 @@ function LibraryStatusChart({ data, className }: LibraryStatusChartProps) {
         [data],
     );
 
-    const options = useMemo<Highcharts.Options>(
+    const options = useMemo(
         () => ({
             chart: {
                 type: 'pie',
@@ -79,7 +78,7 @@ function LibraryStatusChart({ data, className }: LibraryStatusChartProps) {
 
     return (
         <div className={className}>
-            <HighchartsReact highcharts={Highcharts} options={options} />
+            <HighchartsChart options={options} />
         </div>
     );
 }

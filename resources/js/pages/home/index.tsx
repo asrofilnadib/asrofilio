@@ -263,7 +263,7 @@ function DashboardHome({
                                             >
                                                 <Link
                                                     href={paths.reader(
-                                                        featured.book.id,
+                                                        featured.book.uuid,
                                                     )}
                                                 >
                                                     Continue reading

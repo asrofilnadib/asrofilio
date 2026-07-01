@@ -48,7 +48,7 @@ function BookCard({
                 className,
             )}
         >
-            <Link href={paths.libraryShow(book.id)} className="block">
+            <Link href={paths.libraryShow(book.uuid)} className="block">
                 <div className="relative aspect-[2/3] overflow-hidden bg-muted">
                     {coverUrl ? (
                         <img

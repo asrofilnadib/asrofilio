@@ -15,9 +15,11 @@ use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * @property int $id
+ * @property string $uuid
  * @property string $title
  * @property string|null $subtitle
  * @property string $author
@@ -69,9 +71,20 @@ class Book extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (Book $book): void {
+            if ($book->uuid === null) {
+                $book->uuid = (string) Str::uuid();
+            }
+        });
+
         static::deleting(function (Book $book): void {
             $book->userBooks()->delete();
         });
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
     }
 
     /**

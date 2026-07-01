@@ -1,6 +1,6 @@
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
 import { useMemo } from 'react';
+
+import { HighchartsChart } from '@/components/charts/highcharts-chart';
 
 type PointChartData = {
     month: string;
@@ -20,7 +20,7 @@ function AdminColumnChart({
     color = '#7d7517',
     className,
 }: AdminColumnChartProps) {
-    const options = useMemo<Highcharts.Options>(
+    const options = useMemo(
         () => ({
             chart: {
                 type: 'column',
@@ -71,7 +71,7 @@ function AdminColumnChart({
 
     return (
         <div className={className}>
-            <HighchartsReact highcharts={Highcharts} options={options} />
+            <HighchartsChart options={options} />
         </div>
     );
 }

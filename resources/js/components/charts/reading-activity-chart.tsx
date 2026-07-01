@@ -1,7 +1,6 @@
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
 import { useMemo } from 'react';
 
+import { HighchartsChart } from '@/components/charts/highcharts-chart';
 import type { DailyReadingActivity } from '@/types/analytics';
 
 type ReadingActivityChartProps = {
@@ -10,7 +9,7 @@ type ReadingActivityChartProps = {
 };
 
 function ReadingActivityChart({ data, className }: ReadingActivityChartProps) {
-    const options = useMemo<Highcharts.Options>(
+    const options = useMemo(
         () => ({
             chart: {
                 type: 'areaspline',
@@ -82,7 +81,7 @@ function ReadingActivityChart({ data, className }: ReadingActivityChartProps) {
 
     return (
         <div className={className}>
-            <HighchartsReact highcharts={Highcharts} options={options} />
+            <HighchartsChart options={options} />
         </div>
     );
 }

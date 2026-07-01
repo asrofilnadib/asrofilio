@@ -35,7 +35,7 @@ function ReaderToolbar({
         <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/90 px-4 backdrop-blur-sm">
             <div className="flex items-center gap-2">
                 <Button variant="ghost" size="icon" asChild>
-                    <Link href={paths.libraryShow(book.id)}>
+                    <Link href={paths.libraryShow(book.uuid)}>
                         <ArrowLeft className="size-4" />
                     </Link>
                 </Button>

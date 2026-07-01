@@ -6,10 +6,20 @@ use App\Models\User;
 use Database\Seeders\GenreSeeder;
 use Illuminate\Support\Facades\Http;
 
-test('guest can view home page', function () {
+test('guest can view home page with public library browse', function () {
+    $this->seed(GenreSeeder::class);
+    Book::factory()->create(['is_public' => true, 'title' => 'Public Book']);
+
     $response = $this->get(route('home'));
 
     $response->assertOk();
+    $response->assertInertia(fn ($page) => $page
+        ->component('home/index')
+        ->has('books.data', 1)
+        ->has('genres', 12)
+        ->has('counts')
+        ->where('filters.scope', 'public')
+    );
 });
 
 test('guest can browse public library', function () {

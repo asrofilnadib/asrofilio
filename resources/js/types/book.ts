@@ -28,6 +28,7 @@ export type Tag = {
 
 export type Book = {
     id: number;
+    uuid: string;
     title: string;
     subtitle?: string | null;
     author: string;

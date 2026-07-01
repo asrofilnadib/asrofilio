@@ -35,7 +35,7 @@ function LibraryBookCard({
             )}
         >
             <Link
-                href={paths.libraryShow(book.id)}
+                href={paths.libraryShow(book.uuid)}
                 className="relative block aspect-[3/4] overflow-hidden bg-muted"
             >
                 {coverUrl ? (
@@ -106,7 +106,7 @@ function LibraryBookCard({
 
                 {showAddToLibrary && !inLibrary && (
                     <Form
-                        action={paths.addToLibrary(book.id)}
+                        action={paths.addToLibrary(book.uuid)}
                         method="post"
                         className="mt-auto"
                         onSuccess={() =>

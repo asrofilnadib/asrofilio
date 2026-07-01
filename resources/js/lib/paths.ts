@@ -1,10 +1,10 @@
 /** App route paths aligned with Laravel named routes. */
 export const paths = {
     library: '/library',
-    libraryShow: (bookId: number | string) => `/library/${bookId}`,
-    reader: (bookId: number | string) => `/read/${bookId}`,
-    readerFile: (bookId: number | string) => `/read/${bookId}/file`,
-    readerProgress: (bookId: number | string) => `/read/${bookId}/progress`,
+    libraryShow: (bookUuid: string) => `/library/${bookUuid}`,
+    reader: (bookUuid: string) => `/read/${bookUuid}`,
+    readerFile: (bookUuid: string) => `/read/${bookUuid}/file`,
+    readerProgress: (bookUuid: string) => `/read/${bookUuid}/progress`,
     highlights: '/highlights',
     vocabulary: '/vocabulary',
     analytics: '/analytics',
@@ -12,7 +12,7 @@ export const paths = {
     bookIsbn: (isbn: string) => `/api/books/isbn/${isbn}`,
     userBooks: '/user-books',
     userBook: (id: number | string) => `/user-books/${id}`,
-    addToLibrary: (bookId: number | string) => `/library/${bookId}`,
+    addToLibrary: (bookUuid: string) => `/library/${bookUuid}`,
     notes: '/notes',
     note: (id: number | string) => `/notes/${id}`,
     vocabularyItems: '/vocabulary',
@@ -21,7 +21,7 @@ export const paths = {
     admin: {
         dashboard: '/admin',
         books: '/admin/books',
-        book: (id: number | string) => `/admin/books/${id}`,
+        book: (uuid: string) => `/admin/books/${uuid}`,
         genres: '/admin/genres',
         genre: (id: number | string) => `/admin/genres/${id}`,
         languages: '/admin/languages',

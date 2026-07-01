@@ -33,7 +33,7 @@ function AdminBooksIndex({
 }: AdminBooksIndexProps) {
     const [formOpen, setFormOpen] = useState(false);
     const [editingBook, setEditingBook] = useState<Book | null>(null);
-    const [deleteId, setDeleteId] = useState<number | null>(null);
+    const [deleteUuid, setDeleteUuid] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
 
     function openCreate() {
@@ -47,14 +47,14 @@ function AdminBooksIndex({
     }
 
     function confirmDelete() {
-        if (!deleteId) {
+        if (!deleteUuid) {
             return;
         }
         setDeleting(true);
-        router.delete(paths.admin.book(deleteId), {
+        router.delete(paths.admin.book(deleteUuid), {
             onSuccess: () => {
                 toast.success('Book deleted');
-                setDeleteId(null);
+                setDeleteUuid(null);
             },
             onFinish: () => setDeleting(false),
         });
@@ -125,7 +125,7 @@ function AdminBooksIndex({
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() =>
-                                                    setDeleteId(book.id)
+                                                    setDeleteUuid(book.uuid)
                                                 }
                                             >
                                                 <Trash2 className="size-4 text-destructive" />
@@ -148,8 +148,8 @@ function AdminBooksIndex({
             />
 
             <ConfirmDeleteDialog
-                open={deleteId !== null}
-                onOpenChange={(open) => !open && setDeleteId(null)}
+                open={deleteUuid !== null}
+                onOpenChange={(open) => !open && setDeleteUuid(null)}
                 onConfirm={confirmDelete}
                 title="Delete book?"
                 description="This will permanently delete the book and all associated data."

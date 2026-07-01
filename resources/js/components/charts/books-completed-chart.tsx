@@ -1,7 +1,6 @@
-import Highcharts from 'highcharts';
-import HighchartsReact from 'highcharts-react-official';
 import { useMemo } from 'react';
 
+import { HighchartsChart } from '@/components/charts/highcharts-chart';
 import type { BooksCompletedChartPoint } from '@/types/analytics';
 
 type BooksCompletedChartProps = {
@@ -10,7 +9,7 @@ type BooksCompletedChartProps = {
 };
 
 function BooksCompletedChart({ data, className }: BooksCompletedChartProps) {
-    const options = useMemo<Highcharts.Options>(
+    const options = useMemo(
         () => ({
             chart: {
                 type: 'column',
@@ -66,7 +65,7 @@ function BooksCompletedChart({ data, className }: BooksCompletedChartProps) {
 
     return (
         <div className={className}>
-            <HighchartsReact highcharts={Highcharts} options={options} />
+            <HighchartsChart options={options} />
         </div>
     );
 }

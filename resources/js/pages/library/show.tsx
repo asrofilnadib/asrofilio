@@ -122,7 +122,7 @@ function LibraryShow({
                         <div className="flex flex-wrap gap-3">
                             {inLibrary && userBook && book.file_type && (
                                 <Button asChild>
-                                    <Link href={paths.reader(book.id)}>
+                                    <Link href={paths.reader(book.uuid)}>
                                         <Play className="size-4" />
                                         {userBook.status === 'in_progress'
                                             ? 'Continue reading'
