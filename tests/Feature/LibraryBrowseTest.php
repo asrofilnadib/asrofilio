@@ -96,6 +96,27 @@ test('public library includes user_book only for books in user library', functio
         );
 });
 
+test('library can load additional pages for infinite scroll', function () {
+    $this->seed(GenreSeeder::class);
+
+    foreach (range(1, 15) as $index) {
+        $book = Book::factory()->create([
+            'is_public' => true,
+            'title' => sprintf('Scroll Book %02d', $index),
+        ]);
+        attachFictionGenre($book);
+    }
+
+    $this->get(route('library.index', ['page' => 2]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('library/index')
+            ->has('books.data', 3)
+            ->where('books.current_page', 2)
+            ->where('books.per_page', 12)
+        );
+});
+
 test('user can switch locale', function () {
     $user = User::factory()->create();
 

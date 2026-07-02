@@ -23,6 +23,7 @@ import {
 import { useI18n } from '@/lib/i18n';
 import { buildLibraryQuery } from '@/lib/library-query';
 import { paths } from '@/lib/paths';
+import { useLibraryInfiniteScroll } from '@/hooks/use-library-infinite-scroll';
 import type { Auth } from '@/types/auth';
 import type {
     Book,
@@ -86,6 +87,11 @@ function LibraryBrowse({
     const [search, setSearch] = useState(filters.search ?? '');
     const activeStatus = filters.status ?? 'all';
     const activeSort = filters.sort ?? 'newest';
+    const { items, loading, hasMore, sentinelRef } = useLibraryInfiniteScroll({
+        basePath,
+        filters,
+        books,
+    });
 
     function handleSearch(e: FormEvent) {
         e.preventDefault();
@@ -194,7 +200,7 @@ function LibraryBrowse({
                         />
                     )}
 
-                    {books.data.length === 0 ? (
+                    {items.length === 0 ? (
                         <div className="rounded-2xl border border-dashed border-border bg-card/50 py-16 text-center">
                             <BookOpen className="mx-auto size-12 text-muted-foreground/30" />
                             <p className="mt-4 text-muted-foreground">
@@ -211,38 +217,34 @@ function LibraryBrowse({
                             )}
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                            {books.data.map((book) => (
-                                <LibraryBookCard
-                                    key={book.id}
-                                    book={book}
-                                    userBook={resolveUserBook(book)}
-                                    scope={filters.scope}
-                                />
-                            ))}
-                        </div>
-                    )}
+                        <>
+                            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                                {items.map((book) => (
+                                    <LibraryBookCard
+                                        key={book.id}
+                                        book={book}
+                                        userBook={resolveUserBook(book)}
+                                        scope={filters.scope}
+                                    />
+                                ))}
+                            </div>
 
-                    {books.last_page > 1 && (
-                        <div className="flex justify-center gap-2 pt-2">
-                            {books.links.map((link, i) => (
-                                <Button
-                                    key={i}
-                                    variant={
-                                        link.active ? 'default' : 'outline'
-                                    }
-                                    size="sm"
-                                    className="rounded-full"
-                                    disabled={!link.url}
-                                    onClick={() =>
-                                        link.url && router.get(link.url)
-                                    }
-                                    dangerouslySetInnerHTML={{
-                                        __html: link.label,
-                                    }}
-                                />
-                            ))}
-                        </div>
+                            {(hasMore || loading) && (
+                                <div
+                                    ref={sentinelRef}
+                                    className="flex min-h-32 flex-col items-center justify-center gap-3 py-10"
+                                >
+                                    {loading && (
+                                        <>
+                                            <div className="size-9 animate-spin rounded-full border-2 border-primary/25 border-t-primary" />
+                                            <p className="text-sm text-muted-foreground">
+                                                {t('library_loading_more')}
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

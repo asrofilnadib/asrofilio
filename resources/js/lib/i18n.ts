@@ -68,6 +68,7 @@ const messages = {
         library_add_to_my_library: 'Add to My Library',
         library_in_your_library: 'In your library',
         library_added_to_library: 'Added to your library',
+        library_loading_more: 'Loading more books…',
     },
     id: {
         nav_home: 'Beranda',
@@ -134,6 +135,7 @@ const messages = {
         library_add_to_my_library: 'Tambah ke Perpustakaanku',
         library_in_your_library: 'Sudah di perpustakaanmu',
         library_added_to_library: 'Ditambahkan ke perpustakaanmu',
+        library_loading_more: 'Memuat buku lainnya…',
     },
 } as const;
 
