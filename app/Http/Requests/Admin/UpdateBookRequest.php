@@ -33,6 +33,7 @@ class UpdateBookRequest extends FormRequest
             'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,id'],
             'file' => ['nullable', 'file', 'mimes:epub,pdf', 'max:51200'],
+            'staged_upload_id' => ['nullable', 'uuid'],
             'cover' => ['nullable', 'image', 'max:5120'],
         ];
     }

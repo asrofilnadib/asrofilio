@@ -6,8 +6,27 @@ use App\Models\Book;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
-test('admin can upload a pdf when updating a book', function () {
+test('admin can stage a book file upload for filepond', function () {
+    Storage::fake('local');
+
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+    $file = UploadedFile::fake()->create('the-alchemist.pdf', 100, 'application/pdf');
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.books.uploads.process'), [
+            'file' => $file,
+        ]);
+
+    $response
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/plain; charset=UTF-8');
+
+    expect(Str::isUuid($response->getContent()))->toBeTrue();
+});
+
+test('admin can upload a pdf when updating a book via staged upload', function () {
     Storage::fake('local');
 
     $admin = User::factory()->create(['role' => UserRole::Admin]);
@@ -18,11 +37,16 @@ test('admin can upload a pdf when updating a book', function () {
 
     $file = UploadedFile::fake()->create('the-alchemist.pdf', 100, 'application/pdf');
 
+    $stagedId = $this->actingAs($admin)
+        ->post(route('admin.books.uploads.process'), ['file' => $file])
+        ->assertOk()
+        ->getContent();
+
     $this->actingAs($admin)
         ->put(route('admin.books.update', $book), [
             'title' => $book->title,
             'author' => $book->author,
-            'file' => $file,
+            'staged_upload_id' => $stagedId,
         ])
         ->assertRedirect(route('admin.books.index'));
 
@@ -47,11 +71,16 @@ test('admin can replace an existing book file on update', function () {
 
     $file = UploadedFile::fake()->create('replacement.pdf', 100, 'application/pdf');
 
+    $stagedId = $this->actingAs($admin)
+        ->post(route('admin.books.uploads.process'), ['file' => $file])
+        ->assertOk()
+        ->getContent();
+
     $this->actingAs($admin)
         ->put(route('admin.books.update', $book), [
             'title' => $book->title,
             'author' => $book->author,
-            'file' => $file,
+            'staged_upload_id' => $stagedId,
         ])
         ->assertRedirect(route('admin.books.index'));
 

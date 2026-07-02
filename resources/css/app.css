@@ -314,3 +314,15 @@
 .filepond--drip {
     background-color: color-mix(in oklab, var(--primary) 12%, transparent);
 }
+
+.filepond--file-action-button {
+    cursor: pointer;
+}
+
+.filepond--item-panel {
+    background-color: #369763;
+}
+
+.filepond--progress-indicator svg path {
+    stroke: #fff;
+}

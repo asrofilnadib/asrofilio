@@ -52,7 +52,8 @@ function BookFormModal({
 }: BookFormModalProps) {
     const isEditing = Boolean(book);
     const [values, setValues] = useState<BookFormValues>(emptyFormValues);
-    const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [stagedUploadId, setStagedUploadId] = useState<string | null>(null);
+    const [fileUploading, setFileUploading] = useState(false);
 
     useEffect(() => {
         if (!open) {
@@ -60,7 +61,8 @@ function BookFormModal({
         }
 
         setValues(book ? bookToFormValues(book) : emptyFormValues);
-        setUploadFile(null);
+        setStagedUploadId(null);
+        setFileUploading(false);
     }, [open, book]);
 
     const action = isEditing
@@ -99,10 +101,11 @@ function BookFormModal({
                     key={book?.id ?? 'new'}
                     action={action}
                     method={method}
-                    encType="multipart/form-data"
                     transform={(data) => ({
                         ...data,
-                        ...(uploadFile ? { file: uploadFile } : {}),
+                        ...(stagedUploadId
+                            ? { staged_upload_id: stagedUploadId }
+                            : {}),
                     })}
                     resetOnSuccess={!isEditing}
                     onSuccess={() => {
@@ -315,8 +318,9 @@ function BookFormModal({
                                 key={book?.id ?? 'new-file'}
                                 existingFileType={book?.file_type}
                                 existingFilePath={book?.file_path}
-                                error={errors.file}
-                                onFileChange={setUploadFile}
+                                error={errors.file ?? errors.staged_upload_id}
+                                onStagedUploadChange={setStagedUploadId}
+                                onUploadingChange={setFileUploading}
                             />
 
                             <DialogFooter>
@@ -327,7 +331,10 @@ function BookFormModal({
                                 >
                                     Cancel
                                 </Button>
-                                <Button type="submit" disabled={processing}>
+                                <Button
+                                    type="submit"
+                                    disabled={processing || fileUploading}
+                                >
                                     {processing
                                         ? 'Saving…'
                                         : isEditing

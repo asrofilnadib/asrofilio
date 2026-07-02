@@ -24,6 +24,8 @@ export const paths = {
         dashboard: '/admin',
         books: '/admin/books',
         book: (uuid: string) => `/admin/books/${uuid}`,
+        bookUploadProcess: '/admin/books/uploads/process',
+        bookUploadRevert: '/admin/books/uploads/revert',
         genres: '/admin/genres',
         genre: (id: number | string) => `/admin/genres/${id}`,
         languages: '/admin/languages',

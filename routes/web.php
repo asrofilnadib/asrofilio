@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\BookController as AdminBookController;
+use App\Http\Controllers\Admin\BookStagedUploadController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\GenreController;
 use App\Http\Controllers\Admin\LanguageController;
@@ -83,6 +84,11 @@ Route::prefix('admin')
     ->name('admin.')
     ->group(function (): void {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::post('books/uploads/process', [BookStagedUploadController::class, 'process'])
+            ->name('books.uploads.process');
+        Route::delete('books/uploads/revert', [BookStagedUploadController::class, 'revert'])
+            ->name('books.uploads.revert');
 
         Route::resource('books', AdminBookController::class);
         Route::resource('users', AdminUserController::class);

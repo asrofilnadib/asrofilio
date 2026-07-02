@@ -12,7 +12,9 @@ use App\Models\Genre;
 use App\Models\Language;
 use App\Models\Tag;
 use App\Services\BookFileService;
+use App\Services\BookStagedUploadService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,6 +25,7 @@ class BookController extends Controller
 
     public function __construct(
         private BookFileService $bookFileService,
+        private BookStagedUploadService $stagedUploads,
     ) {}
 
     public function index(): Response
@@ -53,18 +56,12 @@ class BookController extends Controller
     {
         $this->authorize('create', Book::class);
 
-        $data = $request->safe()->except(['file', 'cover', 'genre_ids', 'tag_ids']);
+        $data = $request->safe()->except(['file', 'cover', 'genre_ids', 'tag_ids', 'staged_upload_id']);
         $data['created_by'] = $request->user()->id;
 
         $book = Book::create($data);
 
-        if ($request->hasFile('file')) {
-            $stored = $this->bookFileService->storeUploadedFile($request->file('file'), $book);
-            $book->update([
-                'file_path' => $stored['path'],
-                'file_type' => $stored['type'],
-            ]);
-        }
+        $fileAttached = $this->attachUploadedBookFile($request, $book);
 
         if ($request->hasFile('cover')) {
             $path = $request->file('cover')->store('books/'.$book->id, 'local');
@@ -103,16 +100,10 @@ class BookController extends Controller
     {
         $this->authorize('update', $book);
 
-        $data = $request->safe()->except(['file', 'cover', 'genre_ids', 'tag_ids']);
+        $data = $request->safe()->except(['file', 'cover', 'genre_ids', 'tag_ids', 'staged_upload_id']);
         $book->update($data);
 
-        if ($request->hasFile('file')) {
-            $this->bookFileService->deleteBookFiles($book);
-            $stored = $this->bookFileService->storeUploadedFile($request->file('file'), $book);
-            $book->update([
-                'file_path' => $stored['path'],
-                'file_type' => $stored['type'],
-            ]);
+        if ($this->attachUploadedBookFile($request, $book, replaceExisting: true)) {
             ProcessBookUpload::dispatchSync($book->fresh());
         }
 
@@ -146,5 +137,46 @@ class BookController extends Controller
         $book->delete();
 
         return redirect()->route('admin.books.index')->with('success', 'Book deleted successfully.');
+    }
+
+    private function attachUploadedBookFile(
+        Request $request,
+        Book $book,
+        bool $replaceExisting = false,
+    ): bool {
+        if ($request->filled('staged_upload_id')) {
+            $staged = $this->stagedUploads->consume(
+                $request->string('staged_upload_id')->toString(),
+                $request->user()->id,
+            );
+
+            if ($staged === null) {
+                return false;
+            }
+
+            if ($replaceExisting) {
+                $this->bookFileService->deleteBookFiles($book);
+            }
+
+            $this->stagedUploads->attachToBook($book, $staged);
+
+            return true;
+        }
+
+        if (! $request->hasFile('file')) {
+            return false;
+        }
+
+        if ($replaceExisting) {
+            $this->bookFileService->deleteBookFiles($book);
+        }
+
+        $stored = $this->bookFileService->storeUploadedFile($request->file('file'), $book);
+        $book->update([
+            'file_path' => $stored['path'],
+            'file_type' => $stored['type'],
+        ]);
+
+        return true;
     }
 }
