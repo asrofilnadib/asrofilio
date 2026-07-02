@@ -1,6 +1,6 @@
 import { Form, Link, router } from '@inertiajs/react';
 import { BookOpen, Calendar, Download } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 import { toast } from 'sonner';
 
 import { LibraryBookQuickMenu } from '@/components/asrofilio/library-book-quick-menu';
@@ -46,6 +46,9 @@ function LibraryBookCard({
             ? paths.reader(book.uuid)
             : paths.libraryShow(book.uuid);
     const canDownload = Boolean(book.file_type);
+    const showProgress =
+        isMine &&
+        (userBook.status === 'in_progress' || progress > 0);
 
     function confirmRemove() {
         if (!userBook) {
@@ -61,6 +64,11 @@ function LibraryBookCard({
             },
             onFinish: () => setRemoving(false),
         });
+    }
+
+    function stopCardNavigation(event: MouseEvent) {
+        event.preventDefault();
+        event.stopPropagation();
     }
 
     return (
@@ -89,7 +97,7 @@ function LibraryBookCard({
                         )}
 
                         {book.genres && book.genres.length > 0 && (
-                            <div className="absolute top-2.5 left-2.5 flex max-w-[85%] flex-wrap gap-1">
+                            <div className="absolute top-2.5 left-2.5 z-10 flex max-w-[70%] flex-wrap gap-1">
                                 {book.genres.slice(0, 2).map((genre) => (
                                     <Badge
                                         key={genre.id}
@@ -114,8 +122,8 @@ function LibraryBookCard({
 
                     {isMine && (
                         <div
-                            className="absolute top-2.5 right-2.5"
-                            onClick={(event) => event.preventDefault()}
+                            className="absolute top-2.5 right-2.5 z-20"
+                            onClick={stopCardNavigation}
                         >
                             <LibraryBookQuickMenu
                                 book={book}
@@ -130,54 +138,58 @@ function LibraryBookCard({
                     )}
                 </div>
 
-                <div className="flex flex-1 flex-col gap-2 p-3">
-                    <Link href={paths.libraryShow(book.uuid)} className="min-h-0">
+                <div className="flex flex-1 flex-col gap-2.5 p-3">
+                    <Link href={cardHref} className="min-h-0">
                         <h4 className="font-serif text-sm font-semibold leading-snug line-clamp-2 hover:underline">
                             {book.title}
                         </h4>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
+                        <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
                             {book.author}
                         </p>
                     </Link>
 
-                    {isMine && userBook.status === 'in_progress' && (
+                    {showProgress && (
                         <div className="space-y-1">
+                            <p className="text-[11px] font-medium text-muted-foreground">
+                                {progress}%
+                            </p>
                             <div className="h-1 overflow-hidden rounded-full bg-secondary">
                                 <div
                                     className="h-full rounded-full bg-primary"
                                     style={{ width: `${progress}%` }}
                                 />
                             </div>
-                            <p className="text-[10px] text-muted-foreground">
-                                {progress}% complete
-                            </p>
                         </div>
                     )}
 
                     {isMine && (
-                        <div className="mt-auto flex overflow-hidden rounded-lg border border-border/70 bg-secondary/40">
+                        <div
+                            className="mt-auto flex overflow-hidden rounded-xl border border-border/60 bg-secondary/50"
+                            onClick={stopCardNavigation}
+                        >
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 flex-1 rounded-none border-r border-border/70 text-xs"
+                                className="h-9 flex-1 gap-1.5 rounded-none border-r border-border/60 text-xs font-medium hover:bg-background/60"
                                 onClick={() => setScheduleOpen(true)}
                             >
-                                <Calendar className="size-3.5" />
+                                <Calendar className="size-3.5 shrink-0" />
                                 {t('library_schedule')}
                             </Button>
                             {canDownload ? (
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="h-8 flex-1 rounded-none text-xs"
+                                    className="h-9 flex-1 gap-1.5 rounded-none text-xs font-medium hover:bg-background/60"
                                     asChild
                                 >
                                     <a
                                         href={paths.readerFile(book.uuid)}
                                         download
+                                        onClick={stopCardNavigation}
                                     >
-                                        <Download className="size-3.5" />
+                                        <Download className="size-3.5 shrink-0" />
                                         {t('library_download')}
                                     </a>
                                 </Button>
@@ -186,10 +198,10 @@ function LibraryBookCard({
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="h-8 flex-1 rounded-none text-xs"
+                                    className="h-9 flex-1 gap-1.5 rounded-none text-xs font-medium"
                                     disabled
                                 >
-                                    <Download className="size-3.5" />
+                                    <Download className="size-3.5 shrink-0" />
                                     {t('library_download')}
                                 </Button>
                             )}

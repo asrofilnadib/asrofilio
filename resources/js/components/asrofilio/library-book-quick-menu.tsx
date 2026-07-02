@@ -71,10 +71,13 @@ function LibraryBookQuickMenu({
                     variant="ghost"
                     size="icon"
                     className={cn(
-                        'size-7 rounded-full bg-black/35 text-white opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 data-[state=open]:opacity-100',
+                        'size-8 rounded-full bg-black/45 text-white shadow-sm backdrop-blur-sm hover:bg-black/60 hover:text-white',
                         className,
                     )}
-                    onClick={(event) => event.preventDefault()}
+                    onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }}
                 >
                     <MoreVertical className="size-3.5" />
                 </Button>

@@ -52,6 +52,26 @@ test('library can sort books by title', function () {
         );
 });
 
+test('my library books include user_book for card actions', function () {
+    $user = User::factory()->create();
+    $book = Book::factory()->create(['is_public' => true]);
+    $userBook = $user->userBooks()->create([
+        'book_id' => $book->id,
+        'status' => 'unread',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('library.index', ['scope' => 'mine']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('library/index')
+            ->has('books.data', 1)
+            ->where('books.data.0.id', $book->id)
+            ->where('books.data.0.user_book.id', $userBook->id)
+            ->where('books.data.0.user_book.status', 'unread')
+        );
+});
+
 test('user can switch locale', function () {
     $user = User::factory()->create();
 

@@ -53,13 +53,21 @@ const sortOptions: Array<{ value: LibrarySort; labelKey: Parameters<ReturnType<t
 ];
 
 function resolveUserBook(
-    book: Book & { user_book?: UserBook | null; userBooks?: UserBook[] },
+    book: Book & {
+        user_book?: UserBook | null;
+        userBooks?: UserBook[];
+        user_books?: UserBook[];
+    },
 ): UserBook | null {
     if (book.user_book) {
         return book.user_book;
     }
 
-    return book.userBooks?.[0] ?? null;
+    if (book.userBooks?.[0]) {
+        return book.userBooks[0];
+    }
+
+    return book.user_books?.[0] ?? null;
 }
 
 function LibraryBrowse({

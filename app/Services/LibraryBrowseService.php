@@ -76,6 +76,14 @@ class LibraryBrowseService
             ->paginate(12)
             ->withQueryString();
 
+        if ($user) {
+            $books->through(function (Book $book): Book {
+                $book->setAttribute('user_book', $book->userBooks->first());
+
+                return $book;
+            });
+        }
+
         return [
             'books' => $books,
             'genres' => $genres,
