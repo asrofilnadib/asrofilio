@@ -5,7 +5,9 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 import { Button } from '@/components/ui/button';
-import { readerBackground } from '@/lib/reader-theme';
+import { applyStoredHighlights } from '@/lib/pdf-highlight';
+import { readerBackground, readerMutedForeground } from '@/lib/reader-theme';
+import type { Highlight } from '@/types/book';
 import type { PdfReaderSettings } from '@/types/reader';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -19,21 +21,65 @@ type PdfReaderProps = {
     onPageChange?: (page: number, totalPages: number) => void;
     onNumPagesChange?: (total: number) => void;
     settings: PdfReaderSettings;
+    highlights?: Highlight[];
 };
 
-type LazyPageProps = {
+type PdfPageProps = {
     pageNumber: number;
     width?: number;
     scale: number;
     scaleMode: PdfReaderSettings['scaleMode'];
+    highlights: Highlight[];
+    onPageRendered?: (pageNumber: number, element: HTMLElement) => void;
+};
+
+type LazyPageProps = PdfPageProps & {
     eager?: boolean;
 };
+
+function PdfPage({
+    pageNumber,
+    width,
+    scale,
+    scaleMode,
+    highlights,
+    onPageRendered,
+}: PdfPageProps) {
+    const pageRef = useRef<HTMLDivElement>(null);
+
+    const handleTextLayerSuccess = useCallback(() => {
+        if (pageRef.current) {
+            applyStoredHighlights(pageRef.current, highlights, pageNumber);
+            onPageRendered?.(pageNumber, pageRef.current);
+        }
+    }, [highlights, onPageRendered, pageNumber]);
+
+    return (
+        <div
+            ref={pageRef}
+            data-page={pageNumber}
+            className="flex justify-center"
+        >
+            <Page
+                pageNumber={pageNumber}
+                width={scaleMode === 'fit-width' ? width : undefined}
+                scale={scaleMode === 'fit-screen' ? scale : undefined}
+                renderTextLayer
+                renderAnnotationLayer
+                onRenderTextLayerSuccess={handleTextLayerSuccess}
+                className="shadow-lg"
+            />
+        </div>
+    );
+}
 
 function LazyPdfPage({
     pageNumber,
     width,
     scale,
     scaleMode,
+    highlights,
+    onPageRendered,
     eager = false,
 }: LazyPageProps) {
     const ref = useRef<HTMLDivElement>(null);
@@ -74,13 +120,13 @@ function LazyPdfPage({
             className="mb-6 flex justify-center"
         >
             {visible ? (
-                <Page
+                <PdfPage
                     pageNumber={pageNumber}
-                    width={scaleMode === 'fit-width' ? width : undefined}
-                    scale={scaleMode === 'fit-screen' ? scale : undefined}
-                    renderTextLayer
-                    renderAnnotationLayer
-                    className="shadow-lg"
+                    width={width}
+                    scale={scale}
+                    scaleMode={scaleMode}
+                    highlights={highlights}
+                    onPageRendered={onPageRendered}
                 />
             ) : (
                 <div
@@ -101,6 +147,7 @@ function PdfReader({
     onPageChange,
     onNumPagesChange,
     settings,
+    highlights = [],
 }: PdfReaderProps) {
     const [numPages, setNumPages] = useState(0);
     const [currentPage, setCurrentPage] = useState(page);
@@ -243,6 +290,7 @@ function PdfReader({
     ]);
 
     const bgColor = readerBackground(settings.theme);
+    const muted = readerMutedForeground(settings.theme);
     const scale = settings.fontSize / 16;
     const pageWidth =
         containerWidth > 0 ? containerWidth : undefined;
@@ -251,6 +299,7 @@ function PdfReader({
         width: pageWidth,
         scale,
         scaleMode: settings.scaleMode,
+        highlights,
     };
 
     return (
@@ -266,28 +315,16 @@ function PdfReader({
                     file={url}
                     onLoadSuccess={onDocumentLoadSuccess}
                     loading={
-                        <p className="text-muted-foreground">Loading PDF…</p>
+                        <p style={{ color: muted }}>Loading PDF…</p>
                     }
                     error={
                         <p className="text-destructive">Failed to load PDF.</p>
                     }
                 >
                     {settings.readingMode === 'paged' ? (
-                        <Page
+                        <PdfPage
                             pageNumber={currentPage}
-                            width={
-                                settings.scaleMode === 'fit-width'
-                                    ? pageWidth
-                                    : undefined
-                            }
-                            scale={
-                                settings.scaleMode === 'fit-screen'
-                                    ? scale
-                                    : undefined
-                            }
-                            renderTextLayer
-                            renderAnnotationLayer
-                            className="shadow-lg"
+                            {...pageProps}
                         />
                     ) : (
                         numPages > 0 &&

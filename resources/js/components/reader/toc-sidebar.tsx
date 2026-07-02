@@ -1,8 +1,12 @@
-import { Bookmark, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bookmark } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { readerSidebarBackground } from '@/lib/reader-theme';
+import {
+    readerBorderColor,
+    readerForeground,
+    readerMutedForeground,
+    readerSidebarBackground,
+} from '@/lib/reader-theme';
 import { cn } from '@/lib/utils';
 import type { BookChapter } from '@/types/book';
 import type { ReaderTheme } from '@/types/reader';
@@ -25,20 +29,38 @@ type TocSidebarProps = {
     className?: string;
 };
 
-function chapterTypography(level: number, active: boolean): string {
+function chapterStyle(
+    level: number,
+    active: boolean,
+    theme: ReaderTheme,
+): { fontWeight: number; color: string; fontSize?: string } {
     if (active) {
-        return 'font-medium text-primary';
+        return {
+            fontWeight: 500,
+            color: '#c4a882',
+        };
     }
 
     if (level <= 1) {
-        return 'font-semibold text-foreground';
+        return {
+            fontWeight: 600,
+            color: readerForeground(theme),
+        };
     }
 
     if (level === 2) {
-        return 'font-medium text-foreground/80';
+        return {
+            fontWeight: 500,
+            color: readerForeground(theme),
+            fontSize: '0.875rem',
+        };
     }
 
-    return 'font-normal text-[13px] text-muted-foreground';
+    return {
+        fontWeight: 400,
+        color: readerMutedForeground(theme),
+        fontSize: '13px',
+    };
 }
 
 function parsePage(href?: string | null): number | null {
@@ -72,9 +94,13 @@ function TocSidebar({
     className,
 }: TocSidebarProps) {
     const [tab, setTab] = useState<'contents' | 'bookmarks'>('contents');
+    const foreground = readerForeground(theme);
+    const muted = readerMutedForeground(theme);
+    const borderColor = readerBorderColor(theme);
 
     function renderChapter(chapter: BookChapter) {
         const active = isChapterActive(chapter, activeHref, activePage);
+        const typography = chapterStyle(chapter.level, active, theme);
 
         return (
             <div key={chapter.id}>
@@ -82,14 +108,12 @@ function TocSidebar({
                     type="button"
                     onClick={() => onSelect?.(chapter)}
                     className={cn(
-                        'w-full rounded-md py-2 pr-3 text-left text-sm transition-colors hover:bg-accent/70',
-                        active
-                            ? 'bg-primary/15'
-                            : 'hover:text-foreground',
-                        chapterTypography(chapter.level, active),
+                        'w-full rounded-md py-2 pr-3 text-left text-sm transition-colors',
+                        active ? 'bg-primary/15' : 'hover:bg-black/5',
                     )}
                     style={{
                         paddingLeft: `${(chapter.level - 1) * 14 + 12}px`,
+                        ...typography,
                     }}
                 >
                     {chapter.title}
@@ -101,34 +125,41 @@ function TocSidebar({
 
     return (
         <aside
-            className={cn(
-                'flex w-72 shrink-0 flex-col border-r border-border/60',
-                className,
-            )}
-            style={{ backgroundColor: readerSidebarBackground(theme) }}
+            className={cn('flex w-72 shrink-0 flex-col', className)}
+            style={{
+                backgroundColor: readerSidebarBackground(theme),
+                borderRight: `1px solid ${borderColor}`,
+            }}
         >
-            <div className="flex border-b border-border/60">
+            <div
+                className="flex"
+                style={{ borderBottom: `1px solid ${borderColor}` }}
+            >
                 <button
                     type="button"
                     onClick={() => setTab('contents')}
-                    className={cn(
-                        'flex-1 px-4 py-3 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors',
-                        tab === 'contents'
-                            ? 'border-b-2 border-primary text-foreground'
-                            : 'text-muted-foreground hover:text-foreground',
-                    )}
+                    className="flex-1 px-4 py-3 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors"
+                    style={{
+                        color: tab === 'contents' ? foreground : muted,
+                        borderBottom:
+                            tab === 'contents'
+                                ? '2px solid #c4a882'
+                                : '2px solid transparent',
+                    }}
                 >
                     Contents
                 </button>
                 <button
                     type="button"
                     onClick={() => setTab('bookmarks')}
-                    className={cn(
-                        'flex-1 px-4 py-3 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors',
-                        tab === 'bookmarks'
-                            ? 'border-b-2 border-primary text-foreground'
-                            : 'text-muted-foreground hover:text-foreground',
-                    )}
+                    className="flex-1 px-4 py-3 text-[11px] font-semibold tracking-[0.14em] uppercase transition-colors"
+                    style={{
+                        color: tab === 'bookmarks' ? foreground : muted,
+                        borderBottom:
+                            tab === 'bookmarks'
+                                ? '2px solid #c4a882'
+                                : '2px solid transparent',
+                    }}
                 >
                     Bookmarks
                 </button>
@@ -139,7 +170,10 @@ function TocSidebar({
                     chapters.length > 0 ? (
                         chapters.map(renderChapter)
                     ) : (
-                        <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+                        <p
+                            className="px-3 py-8 text-center text-sm"
+                            style={{ color: muted }}
+                        >
                             No table of contents
                         </p>
                     )
@@ -150,10 +184,14 @@ function TocSidebar({
                                 key={bookmark.id}
                                 type="button"
                                 onClick={() => onBookmarkSelect?.(bookmark)}
-                                className="flex w-full items-start gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/70 hover:text-foreground"
+                                className="flex w-full items-start gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-black/5"
+                                style={{ color: muted }}
                             >
-                                <Bookmark className="mt-0.5 size-3.5 shrink-0" />
-                                <span>
+                                <Bookmark
+                                    className="mt-0.5 size-3.5 shrink-0"
+                                    style={{ color: muted }}
+                                />
+                                <span style={{ color: foreground }}>
                                     {bookmark.label ||
                                         bookmark.chapter_title ||
                                         bookmark.cfi_location}
@@ -162,7 +200,10 @@ function TocSidebar({
                         ))}
                     </div>
                 ) : (
-                    <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+                    <p
+                        className="px-3 py-8 text-center text-sm"
+                        style={{ color: muted }}
+                    >
                         No bookmarks yet
                     </p>
                 )}

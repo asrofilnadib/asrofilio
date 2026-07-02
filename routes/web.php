@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\BookCoverController;
 use App\Http\Controllers\BookSearchController;
 use App\Http\Controllers\HighlightController;
@@ -72,6 +73,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/library/{book}', [UserBookController::class, 'store'])->name('user-books.store');
     Route::patch('/user-books/{userBook}', [UserBookController::class, 'update'])->name('user-books.update');
     Route::delete('/user-books/{userBook}', [UserBookController::class, 'destroy'])->name('user-books.destroy');
+    Route::post('/user-books/{userBook}/bookmark', [BookmarkController::class, 'store'])->name('user-books.bookmark.store');
 });
 
 Route::prefix('admin')

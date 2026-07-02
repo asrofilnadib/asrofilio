@@ -12,6 +12,7 @@ export const paths = {
     bookIsbn: (isbn: string) => `/api/books/isbn/${isbn}`,
     userBooks: '/user-books',
     userBook: (id: number | string) => `/user-books/${id}`,
+    userBookBookmark: (id: number | string) => `/user-books/${id}/bookmark`,
     addToLibrary: (bookUuid: string) => `/library/${bookUuid}`,
     notes: '/notes',
     note: (id: number | string) => `/notes/${id}`,

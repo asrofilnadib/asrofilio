@@ -1,5 +1,23 @@
 import type { ReaderTheme } from '@/types/reader';
 
+export function isDarkReaderTheme(theme: ReaderTheme): boolean {
+    return theme === 'dark' || theme === 'dark_sepia';
+}
+
+export function readerForeground(theme: ReaderTheme): string {
+    return isDarkReaderTheme(theme) ? '#f0ebe0' : '#2d2926';
+}
+
+export function readerMutedForeground(theme: ReaderTheme): string {
+    return isDarkReaderTheme(theme) ? '#b8b0a6' : '#6b6560';
+}
+
+export function readerBorderColor(theme: ReaderTheme): string {
+    return isDarkReaderTheme(theme)
+        ? 'rgba(240, 235, 224, 0.12)'
+        : 'rgba(45, 41, 38, 0.12)';
+}
+
 export function readerBackground(theme: ReaderTheme): string {
     switch (theme) {
         case 'dark':

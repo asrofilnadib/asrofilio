@@ -1,4 +1,4 @@
-import type { Book, BookChapter, BookFileType, UserBook } from '@/types/book';
+import type { Book, BookChapter, BookFileType, Highlight, UserBook } from '@/types/book';
 
 export type ReaderTheme = 'light' | 'sepia' | 'dark' | 'dark_sepia';
 
@@ -29,6 +29,7 @@ export type ReaderPageProps = {
         chapter_title?: string | null;
         cfi_location: string;
     }>;
+    highlights?: Highlight[];
     fileUrl: string;
     fileType: BookFileType;
     initialCfi?: string | null;
