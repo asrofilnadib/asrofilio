@@ -39,8 +39,8 @@ function AdminLayout({ children }: AdminLayoutProps) {
     const currentUrl = usePage().url;
 
     return (
-        <div className="flex min-h-screen bg-background">
-            <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-sidebar">
+        <div className="flex h-screen overflow-hidden bg-background">
+            <aside className="flex h-full w-64 shrink-0 flex-col border-r border-border bg-sidebar">
                 <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
                     <BookOpen className="size-6 text-primary" />
                     <span className="font-serif text-xl font-bold text-sidebar-foreground">
@@ -109,7 +109,7 @@ function AdminLayout({ children }: AdminLayoutProps) {
                     </div>
                 </div>
             </aside>
-            <main className="flex-1 overflow-auto">
+            <main className="min-h-0 flex-1 overflow-y-auto">
                 <div className="mx-auto max-w-7xl p-6 lg:p-8">{children}</div>
             </main>
         </div>

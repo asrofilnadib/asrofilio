@@ -11,6 +11,24 @@ use Illuminate\Support\Carbon;
 
 class AdminDashboardService
 {
+    /** @var list<int> */
+    public const TABLE_LIMIT_OPTIONS = [5, 10, 25, 50, 100];
+
+    public function resolveTableLimit(?string $value, int $default = 5): ?int
+    {
+        if ($value === 'all') {
+            return null;
+        }
+
+        if ($value === null || $value === '') {
+            return $default;
+        }
+
+        $limit = (int) $value;
+
+        return in_array($limit, self::TABLE_LIMIT_OPTIONS, true) ? $limit : $default;
+    }
+
     /**
      * @return array<string, int>
      */
@@ -24,6 +42,18 @@ class AdminDashboardService
             'recent_activity_count' => ActivityLog::query()
                 ->where('created_at', '>=', now()->subDays(7))
                 ->count(),
+        ];
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    public function getTableTotals(): array
+    {
+        return [
+            'users' => User::query()->count(),
+            'books' => Book::query()->count(),
+            'activity' => ActivityLog::query()->count(),
         ];
     }
 
@@ -95,12 +125,17 @@ class AdminDashboardService
     /**
      * @return list<array{id: int, name: string, email: string, role: string, library_count: int, joined_at: string}>
      */
-    public function getRecentUsersTable(): array
+    public function getRecentUsersTable(?int $limit = 5): array
     {
-        return User::query()
+        $query = User::query()
             ->withCount('userBooks')
-            ->latest()
-            ->limit(8)
+            ->latest();
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        return $query
             ->get(['id', 'name', 'email', 'role', 'created_at'])
             ->map(fn (User $user): array => [
                 'id' => $user->id,
@@ -116,12 +151,17 @@ class AdminDashboardService
     /**
      * @return list<array{id: int, uuid: string, title: string, author: string, library_count: int, added_at: string}>
      */
-    public function getRecentBooksTable(): array
+    public function getRecentBooksTable(?int $limit = 5): array
     {
-        return Book::query()
+        $query = Book::query()
             ->withCount('userBooks')
-            ->latest()
-            ->limit(8)
+            ->latest();
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        return $query
             ->get(['id', 'uuid', 'title', 'author', 'created_at'])
             ->map(fn (Book $book): array => [
                 'id' => $book->id,
@@ -137,12 +177,17 @@ class AdminDashboardService
     /**
      * @return list<array{id: int, action: string, user_name: string|null, user_id: int|null, created_at: string}>
      */
-    public function getRecentActivityTable(): array
+    public function getRecentActivityTable(?int $limit = 5): array
     {
-        return ActivityLog::query()
+        $query = ActivityLog::query()
             ->with('user:id,name')
-            ->latest()
-            ->limit(10)
+            ->latest();
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+
+        return $query
             ->get(['id', 'user_id', 'action', 'created_at'])
             ->map(fn (ActivityLog $log): array => [
                 'id' => $log->id,

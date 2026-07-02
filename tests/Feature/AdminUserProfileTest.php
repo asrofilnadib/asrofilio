@@ -26,6 +26,22 @@ test('admin dashboard includes recent tables', function () {
             ->has('recentUsers')
             ->has('recentBooks')
             ->has('recentActivity')
+            ->has('tableLimits')
+            ->has('tableTotals')
+            ->where('tableLimits.users_limit', '5')
+        );
+});
+
+test('admin dashboard respects table limit query params', function () {
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+    User::factory()->count(12)->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.dashboard', ['users_limit' => 10]))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->where('tableLimits.users_limit', '10')
+            ->has('recentUsers', 10)
         );
 });
 
