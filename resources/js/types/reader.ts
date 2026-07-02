@@ -1,12 +1,22 @@
 import type { Book, BookChapter, BookFileType, UserBook } from '@/types/book';
 
-export type ReaderTheme = 'light' | 'sepia' | 'dark';
+export type ReaderTheme = 'light' | 'sepia' | 'dark' | 'dark_sepia';
+
+export type PdfReadingMode = 'paged' | 'continuous';
+
+export type PdfScaleMode = 'fit-width' | 'fit-screen';
 
 export type TextSettings = {
     fontSize: number;
     lineHeight: number;
     fontFamily: 'serif' | 'sans';
     theme: ReaderTheme;
+};
+
+export type PdfReaderSettings = TextSettings & {
+    readingMode: PdfReadingMode;
+    scaleMode: PdfScaleMode;
+    showPageNumbers: boolean;
 };
 
 export type ReaderPageProps = {
@@ -38,4 +48,11 @@ export const defaultTextSettings: TextSettings = {
     lineHeight: 1.6,
     fontFamily: 'serif',
     theme: 'sepia',
+};
+
+export const defaultPdfReaderSettings: PdfReaderSettings = {
+    ...defaultTextSettings,
+    readingMode: 'paged',
+    scaleMode: 'fit-width',
+    showPageNumbers: true,
 };

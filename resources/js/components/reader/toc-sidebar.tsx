@@ -2,8 +2,10 @@ import { Bookmark, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { readerSidebarBackground } from '@/lib/reader-theme';
 import { cn } from '@/lib/utils';
 import type { BookChapter } from '@/types/book';
+import type { ReaderTheme } from '@/types/reader';
 
 type ReaderBookmark = {
     id: number;
@@ -19,8 +21,25 @@ type TocSidebarProps = {
     activePage?: number;
     onSelect?: (chapter: BookChapter) => void;
     onBookmarkSelect?: (bookmark: ReaderBookmark) => void;
+    theme?: ReaderTheme;
     className?: string;
 };
+
+function chapterTypography(level: number, active: boolean): string {
+    if (active) {
+        return 'font-medium text-primary';
+    }
+
+    if (level <= 1) {
+        return 'font-semibold text-foreground';
+    }
+
+    if (level === 2) {
+        return 'font-medium text-foreground/80';
+    }
+
+    return 'font-normal text-[13px] text-muted-foreground';
+}
 
 function parsePage(href?: string | null): number | null {
     const match = href?.match(/^page:(\d+)$/);
@@ -49,6 +68,7 @@ function TocSidebar({
     activePage,
     onSelect,
     onBookmarkSelect,
+    theme = 'sepia',
     className,
 }: TocSidebarProps) {
     const [tab, setTab] = useState<'contents' | 'bookmarks'>('contents');
@@ -62,10 +82,11 @@ function TocSidebar({
                     type="button"
                     onClick={() => onSelect?.(chapter)}
                     className={cn(
-                        'w-full rounded-md py-2 pr-3 text-left text-sm transition-colors',
+                        'w-full rounded-md py-2 pr-3 text-left text-sm transition-colors hover:bg-accent/70',
                         active
-                            ? 'bg-primary/15 font-medium text-primary'
-                            : 'text-muted-foreground hover:bg-accent/70 hover:text-foreground',
+                            ? 'bg-primary/15'
+                            : 'hover:text-foreground',
+                        chapterTypography(chapter.level, active),
                     )}
                     style={{
                         paddingLeft: `${(chapter.level - 1) * 14 + 12}px`,
@@ -81,9 +102,10 @@ function TocSidebar({
     return (
         <aside
             className={cn(
-                'flex w-72 shrink-0 flex-col border-r border-border/60 bg-[#ebe5d8]/90',
+                'flex w-72 shrink-0 flex-col border-r border-border/60',
                 className,
             )}
+            style={{ backgroundColor: readerSidebarBackground(theme) }}
         >
             <div className="flex border-b border-border/60">
                 <button

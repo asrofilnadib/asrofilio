@@ -21,6 +21,7 @@ const themes: Array<{ value: ReaderTheme; label: string; icon?: React.ReactNode 
     { value: 'light', label: 'Light', icon: <Sun className="size-3.5" /> },
     { value: 'sepia', label: 'Sepia' },
     { value: 'dark', label: 'Dark', icon: <Moon className="size-3.5" /> },
+    { value: 'dark_sepia', label: 'Dark Sepia' },
 ];
 
 function TextSettingsPopover({

@@ -79,3 +79,29 @@ test('user can update pdf reading progress', function () {
 
     expect($userBook->fresh()->current_page)->toBe(25);
 });
+
+test('progress endpoint returns json not inertia', function () {
+    $user = User::factory()->create();
+    $book = Book::factory()->create([
+        'is_public' => true,
+        'file_type' => BookFileType::Pdf,
+        'page_count' => 50,
+    ]);
+
+    $user->userBooks()->create(['book_id' => $book->id]);
+
+    $response = $this->actingAs($user)
+        ->withHeaders([
+            'Accept' => 'application/json',
+            'X-Requested-With' => 'XMLHttpRequest',
+        ])
+        ->patch(route('reader.progress', $book), [
+            'current_page' => 10,
+            'progress_percent' => 20,
+        ]);
+
+    $response
+        ->assertOk()
+        ->assertHeader('content-type', 'application/json')
+        ->assertJsonStructure(['userBook']);
+});

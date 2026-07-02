@@ -8,7 +8,6 @@ import { VocabularyFormModal } from '@/components/modals/vocabulary-form-modal';
 import { EpubReader } from '@/components/reader/epub-reader';
 import { PdfReader } from '@/components/reader/pdf-reader';
 import { ReaderToolbar } from '@/components/reader/reader-toolbar';
-import { TextSettingsPopover } from '@/components/reader/text-settings-popover';
 import {
     TocSidebar,
     type ReaderBookmark,
@@ -20,12 +19,16 @@ import {
     parsePageFromHref,
 } from '@/lib/pdf-outline';
 import { paths } from '@/lib/paths';
-import type { BookChapter } from '@/types/book';
 import {
-    defaultTextSettings,
-    type ReaderPageProps,
-    type TextSettings,
-} from '@/types/reader';
+    flushReadingProgress,
+    saveReadingProgress,
+} from '@/lib/reader-progress';
+import {
+    loadReaderSettings,
+    persistReaderSettings,
+} from '@/lib/reader-settings-storage';
+import type { BookChapter } from '@/types/book';
+import type { PdfReaderSettings, ReaderPageProps } from '@/types/reader';
 
 function ReaderShow({
     book,
@@ -39,9 +42,9 @@ function ReaderShow({
 }: ReaderPageProps) {
     const isPdf = fileType === 'pdf';
     const [chapters, setChapters] = useState<BookChapter[]>(initialChapters);
-    const [showSettings, setShowSettings] = useState(false);
-    const [settings, setSettings] =
-        useState<TextSettings>(defaultTextSettings);
+    const [settings, setSettings] = useState<PdfReaderSettings>(() =>
+        loadReaderSettings(),
+    );
     const [noteOpen, setNoteOpen] = useState(false);
     const [vocabOpen, setVocabOpen] = useState(false);
     const [numPages, setNumPages] = useState(0);
@@ -49,6 +52,14 @@ function ReaderShow({
     const [location, setLocation] = useState<string | number | undefined>(
         initialCfi ?? initialPage ?? 1,
     );
+
+    useEffect(() => {
+        persistReaderSettings(settings);
+    }, [settings]);
+
+    useEffect(() => {
+        return () => flushReadingProgress();
+    }, []);
 
     useEffect(() => {
         if (!isPdf || chapters.length > 0) {
@@ -93,28 +104,20 @@ function ReaderShow({
             const percent =
                 total > 0 ? Math.min(100, Math.round((page / total) * 100)) : 0;
 
-            router.patch(
-                paths.readerProgress(book.uuid),
-                {
-                    current_page: page,
-                    progress_percent: percent,
-                },
-                { preserveScroll: true, preserveState: true },
-            );
+            saveReadingProgress(book.uuid, {
+                current_page: page,
+                progress_percent: percent,
+            });
         },
         [book.uuid],
     );
 
     const saveEpubProgress = useCallback(
         (cfi: string) => {
-            router.patch(
-                paths.readerProgress(book.uuid),
-                {
-                    cfi_location: cfi,
-                    status: 'in_progress',
-                },
-                { preserveScroll: true, preserveState: true },
-            );
+            saveReadingProgress(book.uuid, {
+                cfi_location: cfi,
+                status: 'in_progress',
+            });
         },
         [book.uuid],
     );
@@ -179,9 +182,10 @@ function ReaderShow({
                 currentPage={currentPage}
                 totalPages={numPages}
                 isPdf={isPdf}
+                settings={settings}
+                onSettingsChange={setSettings}
                 onPrevPage={() => goToPage(-1)}
                 onNextPage={() => goToPage(1)}
-                onToggleSettings={() => setShowSettings(!showSettings)}
                 onAddNote={() => setNoteOpen(true)}
                 onAddHighlight={() =>
                     toast.info('Select text to highlight')
@@ -211,6 +215,7 @@ function ReaderShow({
                     <TocSidebar
                         chapters={chapters}
                         bookmarks={bookmarks}
+                        theme={settings.theme}
                         activePage={isPdf ? currentPage : undefined}
                         activeHref={
                             !isPdf && typeof location === 'string'
@@ -240,15 +245,6 @@ function ReaderShow({
                             onNumPagesChange={setNumPages}
                             settings={settings}
                         />
-                    )}
-
-                    {showSettings && (
-                        <div className="absolute top-4 right-4 z-10">
-                            <TextSettingsPopover
-                                settings={settings}
-                                onChange={setSettings}
-                            />
-                        </div>
                     )}
                 </div>
             </div>

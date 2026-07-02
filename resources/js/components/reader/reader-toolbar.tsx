@@ -5,13 +5,15 @@ import {
     ChevronLeft,
     ChevronRight,
     Highlighter,
-    Settings2,
     StickyNote,
 } from 'lucide-react';
 
+import { ReaderSettingsPanel } from '@/components/reader/reader-settings-panel';
 import { Button } from '@/components/ui/button';
+import { readerToolbarBackground } from '@/lib/reader-theme';
 import { paths } from '@/lib/paths';
 import type { Book } from '@/types/book';
+import type { PdfReaderSettings } from '@/types/reader';
 
 type ReaderToolbarProps = {
     book: Book;
@@ -19,7 +21,8 @@ type ReaderToolbarProps = {
     progressPercent?: number;
     currentPage?: number;
     totalPages?: number;
-    onToggleSettings?: () => void;
+    settings: PdfReaderSettings;
+    onSettingsChange: (settings: PdfReaderSettings) => void;
     onAddNote?: () => void;
     onAddHighlight?: () => void;
     onAddBookmark?: () => void;
@@ -34,7 +37,8 @@ function ReaderToolbar({
     progressPercent = 0,
     currentPage,
     totalPages,
-    onToggleSettings,
+    settings,
+    onSettingsChange,
     onAddNote,
     onAddHighlight,
     onAddBookmark,
@@ -42,8 +46,14 @@ function ReaderToolbar({
     onNextPage,
     isPdf = false,
 }: ReaderToolbarProps) {
+    const showPageNumbers =
+        isPdf && settings.showPageNumbers && currentPage && totalPages;
+
     return (
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-[#f5f0e6]/95 px-3 backdrop-blur-sm lg:px-4">
+        <header
+            className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 px-3 backdrop-blur-sm lg:px-4"
+            style={{ backgroundColor: readerToolbarBackground(settings.theme) }}
+        >
             <div className="flex min-w-0 flex-1 items-center gap-2">
                 <Button variant="ghost" size="icon" className="shrink-0" asChild>
                     <Link href={paths.libraryShow(book.uuid)}>
@@ -61,7 +71,7 @@ function ReaderToolbar({
             </div>
 
             <div className="hidden items-center gap-3 px-4 md:flex">
-                {isPdf && currentPage && totalPages ? (
+                {showPageNumbers ? (
                     <span className="text-xs text-muted-foreground tabular-nums">
                         Page {currentPage} / {totalPages}
                     </span>
@@ -116,14 +126,11 @@ function ReaderToolbar({
                 >
                     <Bookmark className="size-4" />
                 </Button>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onToggleSettings}
-                    title="Reading settings"
-                >
-                    <Settings2 className="size-4" />
-                </Button>
+                <ReaderSettingsPanel
+                    settings={settings}
+                    onChange={onSettingsChange}
+                    isPdf={isPdf}
+                />
             </div>
         </header>
     );

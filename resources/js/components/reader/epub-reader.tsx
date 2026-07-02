@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { ReactReader } from 'react-reader';
 
+import { readerBackground } from '@/lib/reader-theme';
 import type { TextSettings } from '@/types/reader';
 
 type EpubReaderProps = {
@@ -24,14 +25,11 @@ function EpubReader({
             return;
         }
 
-        const themeBg =
-            settings.theme === 'dark'
-                ? '#1a1816'
-                : settings.theme === 'sepia'
-                  ? '#f5f0e6'
-                  : '#ffffff';
+        const themeBg = readerBackground(settings.theme);
         const themeFg =
-            settings.theme === 'dark' ? '#f0ebe0' : '#2d2926';
+            settings.theme === 'dark' || settings.theme === 'dark_sepia'
+                ? '#f0ebe0'
+                : '#2d2926';
 
         container.style.setProperty('--reader-bg', themeBg);
         container.style.setProperty('--reader-fg', themeFg);
