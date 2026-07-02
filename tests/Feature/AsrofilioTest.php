@@ -1,10 +1,12 @@
 <?php
 
+use App\Enums\BookFileType;
 use App\Enums\UserRole;
 use App\Models\Book;
 use App\Models\User;
 use Database\Seeders\GenreSeeder;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 test('guest can view home page with public library browse', function () {
     $this->seed(GenreSeeder::class);
@@ -148,13 +150,26 @@ test('guest cannot stream book file', function () {
 });
 
 test('user with book in library can view reader page', function () {
+    Storage::fake('local');
+
+    $path = 'books/1/sample.epub';
+    Storage::disk('local')->put($path, 'epub-content');
+
     $user = User::factory()->create();
-    $book = Book::factory()->create(['is_public' => true, 'file_path' => 'books/1/sample.epub']);
+    $book = Book::factory()->create([
+        'is_public' => true,
+        'file_path' => $path,
+        'file_type' => BookFileType::Epub,
+    ]);
 
     $user->userBooks()->create(['book_id' => $book->id]);
 
     $this->actingAs($user)
         ->get(route('reader.show', $book))
         ->assertOk()
-        ->assertInertia(fn ($page) => $page->component('reader/show'));
+        ->assertInertia(fn ($page) => $page
+            ->component('reader/show')
+            ->has('fileUrl')
+            ->where('fileType', 'epub')
+        );
 });

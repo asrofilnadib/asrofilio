@@ -2,8 +2,9 @@ import { Link } from '@inertiajs/react';
 import {
     ArrowLeft,
     Bookmark,
+    ChevronLeft,
+    ChevronRight,
     Highlighter,
-    List,
     Settings2,
     StickyNote,
 } from 'lucide-react';
@@ -14,50 +15,83 @@ import type { Book } from '@/types/book';
 
 type ReaderToolbarProps = {
     book: Book;
-    onToggleToc?: () => void;
+    activeSection?: string | null;
+    progressPercent?: number;
+    currentPage?: number;
+    totalPages?: number;
     onToggleSettings?: () => void;
     onAddNote?: () => void;
     onAddHighlight?: () => void;
     onAddBookmark?: () => void;
-    showToc?: boolean;
+    onPrevPage?: () => void;
+    onNextPage?: () => void;
+    isPdf?: boolean;
 };
 
 function ReaderToolbar({
     book,
-    onToggleToc,
+    activeSection,
+    progressPercent = 0,
+    currentPage,
+    totalPages,
     onToggleSettings,
     onAddNote,
     onAddHighlight,
     onAddBookmark,
-    showToc,
+    onPrevPage,
+    onNextPage,
+    isPdf = false,
 }: ReaderToolbarProps) {
     return (
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/90 px-4 backdrop-blur-sm">
-            <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" asChild>
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-[#f5f0e6]/95 px-3 backdrop-blur-sm lg:px-4">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+                <Button variant="ghost" size="icon" className="shrink-0" asChild>
                     <Link href={paths.libraryShow(book.uuid)}>
                         <ArrowLeft className="size-4" />
                     </Link>
                 </Button>
-                <div className="hidden min-w-0 sm:block">
+                <div className="min-w-0">
                     <h1 className="font-serif text-sm font-semibold line-clamp-1">
                         {book.title}
                     </h1>
                     <p className="text-xs text-muted-foreground line-clamp-1">
-                        {book.author}
+                        {activeSection ?? book.author}
                     </p>
                 </div>
             </div>
 
-            <div className="flex items-center gap-1">
-                <Button
-                    variant={showToc ? 'secondary' : 'ghost'}
-                    size="icon"
-                    onClick={onToggleToc}
-                    title="Table of contents"
-                >
-                    <List className="size-4" />
-                </Button>
+            <div className="hidden items-center gap-3 px-4 md:flex">
+                {isPdf && currentPage && totalPages ? (
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                        Page {currentPage} / {totalPages}
+                    </span>
+                ) : null}
+                <span className="text-xs font-medium text-primary tabular-nums">
+                    {progressPercent}%
+                </span>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-1">
+                {isPdf && onPrevPage && onNextPage ? (
+                    <>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onPrevPage}
+                            title="Previous page"
+                        >
+                            <ChevronLeft className="size-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={onNextPage}
+                            title="Next page"
+                        >
+                            <ChevronRight className="size-4" />
+                        </Button>
+                    </>
+                ) : null}
                 <Button
                     variant="ghost"
                     size="icon"

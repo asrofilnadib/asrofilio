@@ -134,9 +134,14 @@ function LibraryShow({
                                 <Form
                                     action={paths.userBooks}
                                     method="post"
-                                    onSuccess={() =>
-                                        toast.success('Added to library')
-                                    }
+                                    onSuccess={() => {
+                                        toast.success('Added to library');
+                                        if (book.file_type === 'pdf') {
+                                            router.visit(
+                                                paths.reader(book.uuid),
+                                            );
+                                        }
+                                    }}
                                 >
                                     <input
                                         type="hidden"

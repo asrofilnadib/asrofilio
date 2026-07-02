@@ -30,7 +30,7 @@ class ReaderController extends Controller
             ['status' => ReadingStatus::Unread],
         );
 
-        $book->load(['chapters', 'language']);
+        $book->load(['chapters.children', 'language']);
 
         $highlights = $book->highlights()
             ->where('user_id', $user->id)
@@ -45,6 +45,15 @@ class ReaderController extends Controller
             'userBook' => $userBook,
             'highlights' => $highlights,
             'bookmarks' => $bookmarks,
+            'fileUrl' => route('reader.file', $book),
+            'fileType' => $book->file_type?->value ?? 'pdf',
+            'chapters' => $book->chapters()
+                ->whereNull('parent_id')
+                ->with('children')
+                ->orderBy('order')
+                ->get(),
+            'initialPage' => $userBook->current_page ?: 1,
+            'initialCfi' => $userBook->cfi_location,
         ]);
     }
 

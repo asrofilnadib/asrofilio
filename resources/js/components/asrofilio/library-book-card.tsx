@@ -26,6 +26,10 @@ function LibraryBookCard({
     const coverUrl = book.cover_url;
     const progress = userBook?.progress_percent ?? 0;
     const inLibrary = Boolean(userBook);
+    const cardHref =
+        inLibrary && book.file_type
+            ? paths.reader(book.uuid)
+            : paths.libraryShow(book.uuid);
 
     return (
         <article
@@ -35,7 +39,7 @@ function LibraryBookCard({
             )}
         >
             <Link
-                href={paths.libraryShow(book.uuid)}
+                href={cardHref}
                 className="relative block aspect-[3/4] overflow-hidden bg-muted"
             >
                 {coverUrl ? (

@@ -13,6 +13,12 @@ export type ReaderPageProps = {
     book: Book;
     userBook: UserBook;
     chapters: BookChapter[];
+    bookmarks?: Array<{
+        id: number;
+        label?: string | null;
+        chapter_title?: string | null;
+        cfi_location: string;
+    }>;
     fileUrl: string;
     fileType: BookFileType;
     initialCfi?: string | null;
