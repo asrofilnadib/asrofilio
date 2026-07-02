@@ -2,12 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\Book;
 use App\Models\Genre;
 use App\Models\Language;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Hash;
 
 class PopularBooksSeeder extends Seeder
 {
@@ -24,13 +26,9 @@ class PopularBooksSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = User::query()->where('email', 'admin@asrofilio.test')->first();
+        $this->ensureDependencies();
 
-        if ($admin === null) {
-            $this->command?->warn('Admin user not found. Skipping popular books seed.');
-
-            return;
-        }
+        $creatorId = $this->resolveCreatorId();
 
         /** @var list<array<string, mixed>> $books */
         $books = require database_path('data/popular-books.php');
@@ -54,7 +52,7 @@ class PopularBooksSeeder extends Seeder
                 'open_library_key' => $entry['open_library_key'] ?? null,
                 'google_books_id' => $entry['google_books_id'] ?? null,
                 'metadata' => $entry['metadata'] ?? null,
-                'created_by' => $admin->id,
+                'created_by' => $creatorId,
             ];
 
             $book = isset($entry['isbn']) && $entry['isbn'] !== ''
@@ -115,5 +113,41 @@ class PopularBooksSeeder extends Seeder
         }
 
         return array_values(array_unique($ids));
+    }
+
+    private function ensureDependencies(): void
+    {
+        if (Genre::query()->doesntExist()) {
+            $this->call(GenreSeeder::class);
+        }
+
+        if (Language::query()->doesntExist()) {
+            $this->call(LanguageSeeder::class);
+        }
+    }
+
+    private function resolveCreatorId(): ?int
+    {
+        $admin = User::query()->where('email', 'admin@asrofilio.test')->first()
+            ?? User::query()->where('role', UserRole::Admin)->first()
+            ?? User::query()->first();
+
+        if ($admin !== null) {
+            return $admin->id;
+        }
+
+        $admin = User::query()->updateOrCreate(
+            ['email' => 'admin@asrofilio.test'],
+            [
+                'name' => 'Admin User',
+                'password' => Hash::make('password'),
+                'role' => UserRole::Admin,
+                'email_verified_at' => now(),
+            ],
+        );
+
+        $this->command?->warn('No user found. Created default admin@asrofilio.test for book catalog seeding.');
+
+        return $admin->id;
     }
 }

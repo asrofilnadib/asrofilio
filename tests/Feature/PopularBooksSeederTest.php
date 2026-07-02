@@ -66,6 +66,16 @@ test('popular books seeder is idempotent', function () {
     )->toBe(0);
 });
 
+test('popular books seeder can run standalone without pre-seeded admin', function () {
+    (new GenreSeeder)->run();
+    (new LanguageSeeder)->run();
+
+    (new PopularBooksSeeder)->run();
+
+    expect(Book::query()->where('is_public', true)->count())->toBe(65);
+    expect(User::query()->where('email', 'admin@asrofilio.test')->exists())->toBeTrue();
+});
+
 test('popular books include metadata cover urls', function () {
     seedPopularBooksDependencies();
 
