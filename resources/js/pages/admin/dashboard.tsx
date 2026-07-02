@@ -93,7 +93,6 @@ function Dashboard({
                             <AdminColumnChart
                                 data={booksAddedChart}
                                 title="Books"
-                                color="#7d7517"
                             />
                         </CardContent>
                     </Card>
@@ -108,7 +107,7 @@ function Dashboard({
                             <AdminColumnChart
                                 data={usersRegisteredChart}
                                 title="Users"
-                                color="#a39e4a"
+                                tone="secondary"
                             />
                         </CardContent>
                     </Card>

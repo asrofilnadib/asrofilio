@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import { HighchartsChart } from '@/components/charts/highcharts-chart';
+import { useChartColors } from '@/lib/chart-theme';
 
 type PointChartData = {
     month: string;
@@ -11,15 +12,22 @@ type AdminColumnChartProps = {
     data: PointChartData[];
     title: string;
     color?: string;
+    tone?: 'primary' | 'secondary';
     className?: string;
 };
 
 function AdminColumnChart({
     data,
     title,
-    color = '#7d7517',
+    color,
+    tone = 'primary',
     className,
 }: AdminColumnChartProps) {
+    const chartColors = useChartColors();
+    const barColor =
+        color ??
+        (tone === 'secondary' ? chartColors.chart2 : chartColors.chart1);
+
     const options = useMemo(
         () => ({
             chart: {
@@ -31,18 +39,22 @@ function AdminColumnChart({
             credits: { enabled: false },
             xAxis: {
                 categories: data.map((d) => d.month),
-                lineColor: '#e0d9cc',
-                labels: { style: { color: '#6b6560' } },
+                lineColor: chartColors.border,
+                labels: {
+                    style: { color: chartColors.mutedForeground },
+                },
             },
             yAxis: {
                 title: { text: title },
-                gridLineColor: '#f0ebe0',
+                gridLineColor: chartColors.gridLine,
                 allowDecimals: false,
-                labels: { style: { color: '#6b6560' } },
+                labels: {
+                    style: { color: chartColors.mutedForeground },
+                },
             },
             legend: { enabled: false },
             plotOptions: {
-                column: { borderRadius: 4, color },
+                column: { borderRadius: 4, color: barColor },
             },
             series: [
                 {
@@ -52,11 +64,11 @@ function AdminColumnChart({
                 },
             ],
             tooltip: {
-                backgroundColor: '#fefcf8',
-                borderColor: '#e0d9cc',
+                backgroundColor: chartColors.tooltipBg,
+                borderColor: chartColors.border,
             },
         }),
-        [color, data, title],
+        [barColor, chartColors, data, title],
     );
 
     if (data.length === 0) {

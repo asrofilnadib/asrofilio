@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import { HighchartsChart } from '@/components/charts/highcharts-chart';
+import { useChartColors } from '@/lib/chart-theme';
 
 type ActivityPoint = {
     date: string;
@@ -13,6 +14,8 @@ type AdminActivityChartProps = {
 };
 
 function AdminActivityChart({ data, className }: AdminActivityChartProps) {
+    const chartColors = useChartColors();
+
     const options = useMemo(
         () => ({
             chart: {
@@ -24,20 +27,24 @@ function AdminActivityChart({ data, className }: AdminActivityChartProps) {
             credits: { enabled: false },
             xAxis: {
                 categories: data.map((d) => d.date),
-                lineColor: '#e0d9cc',
-                labels: { style: { color: '#6b6560' } },
+                lineColor: chartColors.border,
+                labels: {
+                    style: { color: chartColors.mutedForeground },
+                },
             },
             yAxis: {
                 title: { text: 'Actions' },
-                gridLineColor: '#f0ebe0',
+                gridLineColor: chartColors.gridLine,
                 allowDecimals: false,
-                labels: { style: { color: '#6b6560' } },
+                labels: {
+                    style: { color: chartColors.mutedForeground },
+                },
                 min: 0,
             },
             legend: { enabled: false },
             plotOptions: {
                 line: {
-                    color: '#7d7517',
+                    color: chartColors.chart1,
                     lineWidth: 2,
                     marker: { radius: 4 },
                 },
@@ -50,11 +57,11 @@ function AdminActivityChart({ data, className }: AdminActivityChartProps) {
                 },
             ],
             tooltip: {
-                backgroundColor: '#fefcf8',
-                borderColor: '#e0d9cc',
+                backgroundColor: chartColors.tooltipBg,
+                borderColor: chartColors.border,
             },
         }),
-        [data],
+        [chartColors, data],
     );
 
     if (data.length === 0) {

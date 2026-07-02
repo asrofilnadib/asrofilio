@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { LanguageSwitcher } from '@/components/asrofilio/language-switcher';
+import { ThemeSwitcher } from '@/components/asrofilio/theme-switcher';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { paths } from '@/lib/paths';
@@ -71,9 +73,15 @@ function AdminLayout({ children }: AdminLayoutProps) {
                 </nav>
                 <Separator />
                 <div className="space-y-2 p-4">
-                    <p className="truncate px-3 text-xs text-muted-foreground">
-                        {auth.user?.name}
-                    </p>
+                    <div className="flex items-center justify-between px-3">
+                        <p className="truncate text-xs text-muted-foreground">
+                            {auth.user?.name}
+                        </p>
+                        <div className="flex items-center gap-1">
+                            <LanguageSwitcher />
+                            <ThemeSwitcher />
+                        </div>
+                    </div>
                     <div className="flex flex-col gap-1">
                         <Button
                             variant="ghost"

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import { HighchartsChart } from '@/components/charts/highcharts-chart';
+import { chartPalette, useChartColors } from '@/lib/chart-theme';
 
 type OverviewPoint = {
     name: string;
@@ -12,9 +13,10 @@ type ContentOverviewChartProps = {
     className?: string;
 };
 
-const palette = ['#7d7517', '#a39e4a', '#5c5610', '#c4b86a'];
-
 function ContentOverviewChart({ data, className }: ContentOverviewChartProps) {
+    const chartColors = useChartColors();
+    const palette = chartPalette(chartColors);
+
     const seriesData = useMemo(
         () =>
             data
@@ -23,7 +25,7 @@ function ContentOverviewChart({ data, className }: ContentOverviewChartProps) {
                     ...item,
                     color: palette[index % palette.length],
                 })),
-        [data],
+        [data, palette],
     );
 
     const options = useMemo(
@@ -36,8 +38,8 @@ function ContentOverviewChart({ data, className }: ContentOverviewChartProps) {
             title: { text: undefined },
             credits: { enabled: false },
             tooltip: {
-                backgroundColor: '#fefcf8',
-                borderColor: '#e0d9cc',
+                backgroundColor: chartColors.tooltipBg,
+                borderColor: chartColors.border,
                 pointFormat: '<b>{point.y}</b>',
             },
             plotOptions: {
@@ -46,7 +48,7 @@ function ContentOverviewChart({ data, className }: ContentOverviewChartProps) {
                     dataLabels: {
                         enabled: true,
                         format: '{point.name}: {point.y}',
-                        style: { color: '#6b6560' },
+                        style: { color: chartColors.mutedForeground },
                     },
                 },
             },
@@ -58,7 +60,7 @@ function ContentOverviewChart({ data, className }: ContentOverviewChartProps) {
                 },
             ],
         }),
-        [seriesData],
+        [chartColors, seriesData],
     );
 
     if (seriesData.length === 0) {

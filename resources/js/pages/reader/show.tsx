@@ -18,6 +18,11 @@ import {
     loadPdfOutline,
     parsePageFromHref,
 } from '@/lib/pdf-outline';
+import {
+    applyHighlightToSelection,
+    DEFAULT_HIGHLIGHT_COLOR,
+    getPdfTextSelection,
+} from '@/lib/pdf-highlight';
 import { paths } from '@/lib/paths';
 import {
     flushReadingProgress,
@@ -27,14 +32,15 @@ import {
     loadReaderSettings,
     persistReaderSettings,
 } from '@/lib/reader-settings-storage';
-import type { BookChapter } from '@/types/book';
+import type { BookChapter, Highlight } from '@/types/book';
 import type { PdfReaderSettings, ReaderPageProps } from '@/types/reader';
 
 function ReaderShow({
     book,
     userBook,
     chapters: initialChapters,
-    bookmarks = [],
+    bookmarks: initialBookmarks = [],
+    highlights: initialHighlights = [],
     fileUrl,
     fileType,
     initialCfi,
@@ -42,6 +48,9 @@ function ReaderShow({
 }: ReaderPageProps) {
     const isPdf = fileType === 'pdf';
     const [chapters, setChapters] = useState<BookChapter[]>(initialChapters);
+    const [bookmarks, setBookmarks] = useState(initialBookmarks);
+    const [highlights, setHighlights] =
+        useState<Highlight[]>(initialHighlights);
     const [settings, setSettings] = useState<PdfReaderSettings>(() =>
         loadReaderSettings(),
     );
@@ -52,6 +61,14 @@ function ReaderShow({
     const [location, setLocation] = useState<string | number | undefined>(
         initialCfi ?? initialPage ?? 1,
     );
+
+    useEffect(() => {
+        setBookmarks(initialBookmarks);
+    }, [initialBookmarks]);
+
+    useEffect(() => {
+        setHighlights(initialHighlights);
+    }, [initialHighlights]);
 
     useEffect(() => {
         persistReaderSettings(settings);
@@ -171,6 +188,72 @@ function ReaderShow({
         savePdfProgress(next, numPages);
     }
 
+    function handleAddHighlight() {
+        if (!isPdf) {
+            toast.info('Select text to highlight');
+
+            return;
+        }
+
+        const selection = getPdfTextSelection(currentPage);
+
+        if (!selection) {
+            toast.info('Select text in the page first, then tap highlight');
+
+            return;
+        }
+
+        router.post(
+            paths.highlights,
+            {
+                book_id: book.id,
+                text: selection.text,
+                cfi_start: selection.cfiStart,
+                cfi_end: selection.cfiEnd,
+                color: DEFAULT_HIGHLIGHT_COLOR,
+                chapter_title: activeSection,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    applyHighlightToSelection(DEFAULT_HIGHLIGHT_COLOR);
+                    toast.success('Highlight saved');
+                    router.reload({ only: ['highlights'] });
+                },
+                onError: () => toast.error('Could not save highlight'),
+            },
+        );
+    }
+
+    function handleAddBookmark() {
+        const pageRef = isPdf ? `page:${currentPage}` : undefined;
+        const cfiLocation =
+            typeof location === 'string' ? location : pageRef;
+
+        if (!cfiLocation) {
+            toast.error('Could not determine reading position');
+
+            return;
+        }
+
+        router.post(
+            paths.userBookBookmark(userBook.id),
+            {
+                cfi_location: cfiLocation,
+                page: isPdf ? currentPage : undefined,
+                chapter_title: activeSection,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Bookmark saved');
+                    router.reload({ only: ['bookmarks'] });
+                },
+                onError: () => toast.error('Could not save bookmark'),
+            },
+        );
+    }
+
     return (
         <>
             <Head title={`Reading: ${book.title}`} />
@@ -187,27 +270,8 @@ function ReaderShow({
                 onPrevPage={() => goToPage(-1)}
                 onNextPage={() => goToPage(1)}
                 onAddNote={() => setNoteOpen(true)}
-                onAddHighlight={() =>
-                    toast.info('Select text to highlight')
-                }
-                onAddBookmark={() => {
-                    const pageRef = isPdf ? `page:${currentPage}` : undefined;
-
-                    router.post(
-                        `${paths.userBook(userBook.id)}/bookmark`,
-                        {
-                            cfi_location:
-                                typeof location === 'string'
-                                    ? location
-                                    : pageRef,
-                            page: isPdf ? currentPage : undefined,
-                        },
-                        {
-                            onSuccess: () =>
-                                toast.success('Bookmark saved'),
-                        },
-                    );
-                }}
+                onAddHighlight={handleAddHighlight}
+                onAddBookmark={handleAddBookmark}
             />
 
             <div className="flex flex-1 overflow-hidden">
@@ -244,6 +308,7 @@ function ReaderShow({
                             onPageChange={handlePageChange}
                             onNumPagesChange={setNumPages}
                             settings={settings}
+                            highlights={highlights}
                         />
                     )}
                 </div>
