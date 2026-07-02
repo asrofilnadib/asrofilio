@@ -58,6 +58,9 @@ class LibraryController extends Controller
             'userBook' => $userBook,
             'highlights' => $highlights,
             'notes' => $notes,
+            'libraryScope' => in_array($request->query('scope'), ['mine', 'public'], true)
+                ? $request->query('scope')
+                : 'public',
         ]);
     }
 

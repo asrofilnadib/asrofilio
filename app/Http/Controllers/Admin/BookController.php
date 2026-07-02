@@ -113,6 +113,7 @@ class BookController extends Controller
                 'file_path' => $stored['path'],
                 'file_type' => $stored['type'],
             ]);
+            ProcessBookUpload::dispatchSync($book->fresh());
         }
 
         if ($request->hasFile('cover')) {

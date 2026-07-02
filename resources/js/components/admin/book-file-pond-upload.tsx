@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { FilePond, registerPlugin } from 'react-filepond';
 import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type';
+import type { FilePondFile } from 'filepond';
 
 import { Label } from '@/components/ui/label';
 
@@ -20,6 +21,7 @@ type BookFilePondUploadProps = {
     existingFileType?: string | null;
     existingFilePath?: string | null;
     error?: string;
+    onFileChange?: (file: File | null) => void;
 };
 
 function BookFilePondUpload({
@@ -27,7 +29,10 @@ function BookFilePondUpload({
     existingFileType,
     existingFilePath,
     error,
+    onFileChange,
 }: BookFilePondUploadProps) {
+    const [files, setFiles] = useState<FilePondFile[]>([]);
+
     const existingFileLabel = useMemo(() => {
         if (existingFilePath) {
             return existingFilePath.split('/').pop() ?? null;
@@ -35,6 +40,13 @@ function BookFilePondUpload({
 
         return existingFileType ? existingFileType.toUpperCase() : null;
     }, [existingFilePath, existingFileType]);
+
+    function handleUpdateFiles(fileItems: FilePondFile[]) {
+        setFiles(fileItems);
+        const file = fileItems[0]?.file;
+
+        onFileChange?.(file instanceof File ? file : null);
+    }
 
     return (
         <div className="space-y-2">
@@ -54,7 +66,8 @@ function BookFilePondUpload({
             )}
             <FilePond
                 id={inputId}
-                name="file"
+                files={files}
+                onupdatefiles={handleUpdateFiles}
                 allowMultiple={false}
                 allowProcess={false}
                 instantUpload={false}

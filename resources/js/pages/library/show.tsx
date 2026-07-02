@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { ReadingProgressBar } from '@/components/asrofilio/reading-progress-bar';
+import { PageBreadcrumb } from '@/components/asrofilio/page-breadcrumb';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookHighlightsModal } from '@/components/modals/book-highlights-modal';
@@ -40,6 +41,7 @@ type LibraryShowProps = {
     userBook?: UserBook | null;
     highlights?: Highlight[];
     notes?: Note[];
+    libraryScope?: 'mine' | 'public';
 };
 
 const statusOptions: Array<{
@@ -65,6 +67,7 @@ function LibraryShow({
     userBook,
     highlights = [],
     notes = [],
+    libraryScope = 'public',
 }: LibraryShowProps) {
     const { t } = useI18n();
     const [reviewOpen, setReviewOpen] = useState(false);
@@ -116,6 +119,19 @@ function LibraryShow({
             <Head title={book.title} />
 
             <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
+                <PageBreadcrumb
+                    items={[
+                        {
+                            label:
+                                libraryScope === 'mine'
+                                    ? t('library_my')
+                                    : t('library_public'),
+                            href: `${paths.library}?scope=${libraryScope}`,
+                        },
+                        { label: book.title },
+                    ]}
+                />
+
                 <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
                     <div className="mx-auto w-full max-w-[240px] lg:mx-0">
                         <div className="aspect-[2/3] overflow-hidden rounded-lg border border-border bg-muted shadow-sm">

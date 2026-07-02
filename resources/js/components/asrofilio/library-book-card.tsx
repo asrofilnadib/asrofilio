@@ -47,7 +47,7 @@ function LibraryBookCard({
     const cardHref =
         inLibrary && book.file_type
             ? paths.reader(book.uuid)
-            : paths.libraryShow(book.uuid);
+            : `${paths.libraryShow(book.uuid)}?scope=${scope}`;
     const canDownload = Boolean(book.file_type);
     const showProgress = isMine && userBook.status === 'in_progress';
 

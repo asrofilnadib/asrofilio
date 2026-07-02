@@ -52,6 +52,7 @@ function BookFormModal({
 }: BookFormModalProps) {
     const isEditing = Boolean(book);
     const [values, setValues] = useState<BookFormValues>(emptyFormValues);
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
 
     useEffect(() => {
         if (!open) {
@@ -59,6 +60,7 @@ function BookFormModal({
         }
 
         setValues(book ? bookToFormValues(book) : emptyFormValues);
+        setUploadFile(null);
     }, [open, book]);
 
     const action = isEditing
@@ -98,6 +100,10 @@ function BookFormModal({
                     action={action}
                     method={method}
                     encType="multipart/form-data"
+                    transform={(data) => ({
+                        ...data,
+                        ...(uploadFile ? { file: uploadFile } : {}),
+                    })}
                     resetOnSuccess={!isEditing}
                     onSuccess={() => {
                         toast.success(
@@ -310,6 +316,7 @@ function BookFormModal({
                                 existingFileType={book?.file_type}
                                 existingFilePath={book?.file_path}
                                 error={errors.file}
+                                onFileChange={setUploadFile}
                             />
 
                             <DialogFooter>
