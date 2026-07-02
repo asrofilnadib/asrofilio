@@ -1,6 +1,8 @@
 import { Form, Head, Link, router } from '@inertiajs/react';
 import {
     BookOpen,
+    Calendar,
+    Download,
     Highlighter,
     Play,
     Star,
@@ -13,8 +15,10 @@ import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BookHighlightsModal } from '@/components/modals/book-highlights-modal';
+import { BookNotesModal } from '@/components/modals/book-notes-modal';
 import { ConfirmDeleteDialog } from '@/components/modals/confirm-delete-dialog';
+import { ScheduleBookModal } from '@/components/modals/schedule-book-modal';
 import {
     Select,
     SelectContent,
@@ -25,7 +29,9 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
+import { useI18n } from '@/lib/i18n';
 import { paths } from '@/lib/paths';
+import { cn } from '@/lib/utils';
 import type { Book, Highlight, Note, ReadingStatus, UserBook } from '@/types/book';
 
 type LibraryShowProps = {
@@ -35,12 +41,23 @@ type LibraryShowProps = {
     notes?: Note[];
 };
 
-const statusOptions: Array<{ value: ReadingStatus; label: string }> = [
-    { value: 'unread', label: 'Unread' },
-    { value: 'in_progress', label: 'Reading' },
-    { value: 'scheduled', label: 'Scheduled' },
-    { value: 'completed', label: 'Completed' },
+const statusOptions: Array<{
+    value: ReadingStatus;
+    labelKey: 'library_status_unread' | 'library_status_reading' | 'library_status_scheduled' | 'library_status_completed';
+}> = [
+    { value: 'unread', labelKey: 'library_status_unread' },
+    { value: 'in_progress', labelKey: 'library_status_reading' },
+    { value: 'scheduled', labelKey: 'library_status_scheduled' },
+    { value: 'completed', labelKey: 'library_status_completed' },
 ];
+
+function formatDate(iso: string): string {
+    return new Date(iso).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    });
+}
 
 function LibraryShow({
     book,
@@ -48,7 +65,11 @@ function LibraryShow({
     highlights = [],
     notes = [],
 }: LibraryShowProps) {
+    const { t } = useI18n();
     const [reviewOpen, setReviewOpen] = useState(false);
+    const [scheduleOpen, setScheduleOpen] = useState(false);
+    const [highlightsOpen, setHighlightsOpen] = useState(false);
+    const [notesOpen, setNotesOpen] = useState(false);
     const [removeOpen, setRemoveOpen] = useState(false);
     const [removing, setRemoving] = useState(false);
     const [status, setStatus] = useState<ReadingStatus>(
@@ -56,6 +77,23 @@ function LibraryShow({
     );
     const inLibrary = Boolean(userBook);
     const coverUrl = book.cover_url;
+    const canDownload = Boolean(book.file_type);
+
+    function updateStatus(next: ReadingStatus) {
+        if (!userBook) {
+            return;
+        }
+
+        setStatus(next);
+        router.patch(
+            paths.userBook(userBook.id),
+            { status: next },
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success(t('library_status_updated')),
+            },
+        );
+    }
 
     function confirmRemove() {
         if (!userBook) {
@@ -64,7 +102,7 @@ function LibraryShow({
 
         setRemoving(true);
         router.delete(paths.userBook(userBook.id), {
-            onSuccess: () => toast.success('Removed from library'),
+            onSuccess: () => toast.success(t('library_removed')),
             onFinish: () => {
                 setRemoving(false);
                 setRemoveOpen(false);
@@ -119,15 +157,26 @@ function LibraryShow({
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-3">
+                        <div className="flex flex-wrap gap-2">
                             {inLibrary && userBook && book.file_type && (
                                 <Button asChild>
                                     <Link href={paths.reader(book.uuid)}>
                                         <Play className="size-4" />
                                         {userBook.status === 'in_progress'
-                                            ? 'Continue reading'
-                                            : 'Start reading'}
+                                            ? t('library_continue_reading')
+                                            : t('library_start_reading')}
                                     </Link>
+                                </Button>
+                            )}
+                            {inLibrary && canDownload && (
+                                <Button variant="outline" asChild>
+                                    <a
+                                        href={paths.readerFile(book.uuid)}
+                                        download
+                                    >
+                                        <Download className="size-4" />
+                                        {t('library_download')}
+                                    </a>
                                 </Button>
                             )}
                             {!inLibrary && (
@@ -159,155 +208,155 @@ function LibraryShow({
                                     onClick={() => setRemoveOpen(true)}
                                 >
                                     <Trash2 className="size-4" />
-                                    Remove from library
+                                    {t('library_remove')}
                                 </Button>
                             )}
                         </div>
 
                         {userBook && (
-                            <Card>
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="text-base">
-                                        Reading status
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <Form
-                                        action={paths.userBook(userBook.id)}
-                                        method="patch"
-                                        onSuccess={() =>
-                                            toast.success('Status updated')
-                                        }
-                                    >
-                                        <input
-                                            type="hidden"
-                                            name="status"
-                                            value={status}
-                                        />
-                                        <Select
-                                            value={status}
-                                            onValueChange={(value) =>
-                                                setStatus(
-                                                    value as ReadingStatus,
-                                                )
-                                            }
-                                        >
-                                            <SelectTrigger className="w-48">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {statusOptions.map((opt) => (
-                                                    <SelectItem
-                                                        key={opt.value}
-                                                        value={opt.value}
-                                                    >
-                                                        {opt.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                            <div className="space-y-4 rounded-xl border border-border/70 bg-secondary/30 p-4">
+                                <div className="flex flex-wrap gap-2">
+                                    {statusOptions.map(({ value, labelKey }) => (
                                         <Button
-                                            type="submit"
+                                            key={value}
+                                            type="button"
                                             size="sm"
-                                            className="mt-2"
+                                            variant={
+                                                status === value
+                                                    ? 'default'
+                                                    : 'outline'
+                                            }
+                                            className={cn(
+                                                'rounded-full',
+                                                status === value &&
+                                                    'shadow-sm',
+                                            )}
+                                            onClick={() => updateStatus(value)}
                                         >
-                                            Update status
+                                            {t(labelKey)}
                                         </Button>
-                                    </Form>
+                                    ))}
+                                </div>
 
+                                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                                     {userBook.progress_percent > 0 && (
-                                        <div className="space-y-1">
-                                            <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                                        <div className="flex min-w-[140px] flex-1 items-center gap-2">
+                                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-background">
                                                 <div
-                                                    className="h-full bg-primary"
+                                                    className="h-full rounded-full bg-primary"
                                                     style={{
                                                         width: `${userBook.progress_percent}%`,
                                                     }}
                                                 />
                                             </div>
-                                            <p className="text-xs text-muted-foreground">
+                                            <span className="shrink-0 tabular-nums">
                                                 {userBook.progress_percent}%
-                                                complete
-                                            </p>
+                                            </span>
                                         </div>
                                     )}
+                                    {userBook.current_page > 0 && (
+                                        <span>
+                                            Page {userBook.current_page}
+                                        </span>
+                                    )}
+                                    {userBook.rating ? (
+                                        <span className="flex items-center gap-1 text-amber-600">
+                                            <Star className="size-3.5 fill-current" />
+                                            {userBook.rating}/5
+                                        </span>
+                                    ) : null}
+                                </div>
 
-                                    <div className="flex items-center gap-2">
-                                        {userBook.rating ? (
-                                            <div className="flex items-center gap-1 text-amber-600">
-                                                <Star className="size-4 fill-current" />
-                                                <span className="text-sm font-medium">
-                                                    {userBook.rating}/5
-                                                </span>
-                                            </div>
-                                        ) : null}
+                                {status === 'scheduled' && (
+                                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                                        <Calendar className="size-4 text-muted-foreground" />
+                                        <span>
+                                            {t('library_scheduled_for')}:{' '}
+                                            {userBook.scheduled_at
+                                                ? formatDate(
+                                                      userBook.scheduled_at,
+                                                  )
+                                                : '—'}
+                                        </span>
                                         <Button
-                                            variant="outline"
+                                            variant="link"
                                             size="sm"
-                                            onClick={() =>
-                                                setReviewOpen(!reviewOpen)
-                                            }
+                                            className="h-auto p-0"
+                                            onClick={() => setScheduleOpen(true)}
                                         >
-                                            {userBook.review
-                                                ? 'Edit review'
-                                                : 'Write review'}
+                                            {t('library_reschedule')}
                                         </Button>
                                     </div>
+                                )}
 
-                                    {reviewOpen && (
-                                        <Form
-                                            action={paths.userBook(
-                                                userBook.id,
-                                            )}
-                                            method="patch"
-                                            onSuccess={() => {
-                                                toast.success('Review saved');
-                                                setReviewOpen(false);
-                                            }}
-                                            className="space-y-3"
+                                <div className="flex flex-wrap gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setScheduleOpen(true)}
+                                    >
+                                        <Calendar className="size-4" />
+                                        {t('library_schedule')}
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                            setReviewOpen(!reviewOpen)
+                                        }
+                                    >
+                                        {userBook.review
+                                            ? t('library_edit_review')
+                                            : t('library_write_review')}
+                                    </Button>
+                                </div>
+
+                                {reviewOpen && (
+                                    <Form
+                                        action={paths.userBook(userBook.id)}
+                                        method="patch"
+                                        onSuccess={() => {
+                                            toast.success('Review saved');
+                                            setReviewOpen(false);
+                                        }}
+                                        className="space-y-3 rounded-lg border border-border/60 bg-background/60 p-3"
+                                    >
+                                        <Select
+                                            name="rating"
+                                            defaultValue={
+                                                userBook.rating?.toString() ??
+                                                undefined
+                                            }
                                         >
-                                            <Select
-                                                name="rating"
-                                                defaultValue={
-                                                    userBook.rating?.toString() ??
-                                                    undefined
-                                                }
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Rating" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {[1, 2, 3, 4, 5].map(
-                                                        (n) => (
-                                                            <SelectItem
-                                                                key={n}
-                                                                value={n.toString()}
-                                                            >
-                                                                {n} star
-                                                                {n > 1
-                                                                    ? 's'
-                                                                    : ''}
-                                                            </SelectItem>
-                                                        ),
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                            <Textarea
-                                                name="review"
-                                                rows={3}
-                                                placeholder="Share your thoughts…"
-                                                defaultValue={
-                                                    userBook.review ??
-                                                    undefined
-                                                }
-                                            />
-                                            <Button type="submit" size="sm">
-                                                Save review
-                                            </Button>
-                                        </Form>
-                                    )}
-                                </CardContent>
-                            </Card>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Rating" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {[1, 2, 3, 4, 5].map((n) => (
+                                                    <SelectItem
+                                                        key={n}
+                                                        value={n.toString()}
+                                                    >
+                                                        {n} star
+                                                        {n > 1 ? 's' : ''}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Textarea
+                                            name="review"
+                                            rows={3}
+                                            placeholder="Share your thoughts…"
+                                            defaultValue={
+                                                userBook.review ?? undefined
+                                            }
+                                        />
+                                        <Button type="submit" size="sm">
+                                            Save review
+                                        </Button>
+                                    </Form>
+                                )}
+                            </div>
                         )}
 
                         {book.description && (
@@ -333,15 +382,32 @@ function LibraryShow({
                             <>
                                 <Separator />
                                 <div className="grid gap-6 md:grid-cols-2">
-                                    <div>
-                                        <h3 className="mb-3 flex items-center gap-2 font-serif text-lg font-semibold">
-                                            <Highlighter className="size-4" />
-                                            Highlights
-                                        </h3>
+                                    <div className="rounded-xl border border-border/70 bg-card p-4">
+                                        <div className="mb-3 flex items-center justify-between">
+                                            <h3 className="flex items-center gap-2 font-serif text-lg font-semibold">
+                                                <Highlighter className="size-4" />
+                                                {t('library_highlights')}
+                                                <Badge variant="secondary">
+                                                    {highlights.length}
+                                                </Badge>
+                                            </h3>
+                                            {highlights.length > 0 && (
+                                                <Button
+                                                    variant="link"
+                                                    size="sm"
+                                                    className="h-auto p-0"
+                                                    onClick={() =>
+                                                        setHighlightsOpen(true)
+                                                    }
+                                                >
+                                                    {t('library_view_all')}
+                                                </Button>
+                                            )}
+                                        </div>
                                         {highlights.length > 0 ? (
                                             <ul className="space-y-3">
                                                 {highlights
-                                                    .slice(0, 5)
+                                                    .slice(0, 3)
                                                     .map((h) => (
                                                         <li
                                                             key={h.id}
@@ -352,43 +418,54 @@ function LibraryShow({
                                                             }}
                                                         >
                                                             <p className="italic">
-                                                                "{h.text}"
+                                                                &ldquo;{h.text}
+                                                                &rdquo;
                                                             </p>
-                                                            {h.note && (
-                                                                <p className="mt-1 text-muted-foreground">
-                                                                    {h.note}
-                                                                </p>
-                                                            )}
                                                         </li>
                                                     ))}
                                             </ul>
                                         ) : (
                                             <p className="text-sm text-muted-foreground">
-                                                No highlights yet
+                                                {t('library_no_highlights')}
                                             </p>
                                         )}
                                     </div>
-                                    <div>
-                                        <h3 className="mb-3 flex items-center gap-2 font-serif text-lg font-semibold">
-                                            <StickyNote className="size-4" />
-                                            Notes
-                                        </h3>
+                                    <div className="rounded-xl border border-border/70 bg-card p-4">
+                                        <div className="mb-3 flex items-center justify-between">
+                                            <h3 className="flex items-center gap-2 font-serif text-lg font-semibold">
+                                                <StickyNote className="size-4" />
+                                                {t('library_notes')}
+                                                <Badge variant="secondary">
+                                                    {notes.length}
+                                                </Badge>
+                                            </h3>
+                                            {notes.length > 0 && (
+                                                <Button
+                                                    variant="link"
+                                                    size="sm"
+                                                    className="h-auto p-0"
+                                                    onClick={() =>
+                                                        setNotesOpen(true)
+                                                    }
+                                                >
+                                                    {t('library_view_all')}
+                                                </Button>
+                                            )}
+                                        </div>
                                         {notes.length > 0 ? (
                                             <ul className="space-y-3">
-                                                {notes
-                                                    .slice(0, 5)
-                                                    .map((n) => (
-                                                        <li
-                                                            key={n.id}
-                                                            className="rounded-lg border border-border bg-card p-3 text-sm"
-                                                        >
-                                                            {n.content}
-                                                        </li>
-                                                    ))}
+                                                {notes.slice(0, 3).map((n) => (
+                                                    <li
+                                                        key={n.id}
+                                                        className="rounded-lg border border-border bg-secondary/30 p-3 text-sm"
+                                                    >
+                                                        {n.content}
+                                                    </li>
+                                                ))}
                                             </ul>
                                         ) : (
                                             <p className="text-sm text-muted-foreground">
-                                                No notes yet
+                                                {t('library_no_notes')}
                                             </p>
                                         )}
                                     </div>
@@ -399,13 +476,37 @@ function LibraryShow({
                 </div>
             </div>
 
+            {userBook && (
+                <>
+                    <ScheduleBookModal
+                        open={scheduleOpen}
+                        onOpenChange={setScheduleOpen}
+                        book={book}
+                        userBookId={userBook.id}
+                        defaultDate={userBook.scheduled_at}
+                    />
+                    <BookHighlightsModal
+                        open={highlightsOpen}
+                        onOpenChange={setHighlightsOpen}
+                        book={book}
+                        initialHighlights={highlights}
+                    />
+                    <BookNotesModal
+                        open={notesOpen}
+                        onOpenChange={setNotesOpen}
+                        book={book}
+                        initialNotes={notes}
+                    />
+                </>
+            )}
+
             <ConfirmDeleteDialog
                 open={removeOpen}
                 onOpenChange={setRemoveOpen}
                 onConfirm={confirmRemove}
-                title="Remove from library?"
-                description="This book will be removed from your library. Your highlights and notes will remain unless you delete them separately."
-                confirmLabel="Remove"
+                title={t('library_remove_confirm_title')}
+                description={t('library_remove_confirm_desc')}
+                confirmLabel={t('library_remove')}
                 isLoading={removing}
             />
         </>

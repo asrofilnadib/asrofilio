@@ -1,9 +1,16 @@
-import { Form, Link } from '@inertiajs/react';
-import { BookOpen, MoreVertical } from 'lucide-react';
+import { Form, Link, router } from '@inertiajs/react';
+import { BookOpen, Calendar, Download } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { LibraryBookQuickMenu } from '@/components/asrofilio/library-book-quick-menu';
+import { BookHighlightsModal } from '@/components/modals/book-highlights-modal';
+import { BookNotesModal } from '@/components/modals/book-notes-modal';
+import { ConfirmDeleteDialog } from '@/components/modals/confirm-delete-dialog';
+import { ScheduleBookModal } from '@/components/modals/schedule-book-modal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/lib/i18n';
 import { paths } from '@/lib/paths';
 import { cn } from '@/lib/utils';
 import type { Book, UserBook } from '@/types/book';
@@ -23,78 +30,117 @@ function LibraryBookCard({
     showAddToLibrary = false,
     className,
 }: LibraryBookCardProps) {
+    const { t } = useI18n();
+    const [scheduleOpen, setScheduleOpen] = useState(false);
+    const [highlightsOpen, setHighlightsOpen] = useState(false);
+    const [notesOpen, setNotesOpen] = useState(false);
+    const [removeOpen, setRemoveOpen] = useState(false);
+    const [removing, setRemoving] = useState(false);
+
     const coverUrl = book.cover_url;
     const progress = userBook?.progress_percent ?? 0;
     const inLibrary = Boolean(userBook);
+    const isMine = scope === 'mine' && inLibrary && userBook;
     const cardHref =
         inLibrary && book.file_type
             ? paths.reader(book.uuid)
             : paths.libraryShow(book.uuid);
+    const canDownload = Boolean(book.file_type);
+
+    function confirmRemove() {
+        if (!userBook) {
+            return;
+        }
+
+        setRemoving(true);
+        router.delete(paths.userBook(userBook.id), {
+            preserveScroll: true,
+            onSuccess: () => {
+                toast.success(t('library_removed'));
+                setRemoveOpen(false);
+            },
+            onFinish: () => setRemoving(false),
+        });
+    }
 
     return (
-        <article
-            className={cn(
-                'group flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm transition-shadow hover:shadow-md',
-                className,
-            )}
-        >
-            <Link
-                href={cardHref}
-                className="relative block aspect-[3/4] overflow-hidden bg-muted"
+        <>
+            <article
+                className={cn(
+                    'group flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm transition-shadow hover:shadow-md',
+                    className,
+                )}
             >
-                {coverUrl ? (
-                    <img
-                        src={coverUrl}
-                        alt=""
-                        className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                ) : (
-                    <div className="flex size-full items-center justify-center bg-secondary">
-                        <BookOpen className="size-12 text-muted-foreground/30" />
-                    </div>
-                )}
+                <div className="relative">
+                    <Link
+                        href={cardHref}
+                        className="relative block aspect-[3/4] overflow-hidden bg-muted"
+                    >
+                        {coverUrl ? (
+                            <img
+                                src={coverUrl}
+                                alt=""
+                                className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                        ) : (
+                            <div className="flex size-full items-center justify-center bg-secondary">
+                                <BookOpen className="size-12 text-muted-foreground/30" />
+                            </div>
+                        )}
 
-                {book.genres && book.genres.length > 0 && (
-                    <div className="absolute top-2.5 left-2.5 flex max-w-[85%] flex-wrap gap-1">
-                        {book.genres.slice(0, 2).map((genre) => (
-                            <Badge
-                                key={genre.id}
-                                variant="secondary"
-                                className="border-0 bg-black/45 text-[10px] text-white backdrop-blur-sm"
-                            >
-                                {genre.name}
-                            </Badge>
-                        ))}
-                    </div>
-                )}
+                        {book.genres && book.genres.length > 0 && (
+                            <div className="absolute top-2.5 left-2.5 flex max-w-[85%] flex-wrap gap-1">
+                                {book.genres.slice(0, 2).map((genre) => (
+                                    <Badge
+                                        key={genre.id}
+                                        variant="secondary"
+                                        className="border-0 bg-black/45 text-[10px] text-white backdrop-blur-sm"
+                                    >
+                                        {genre.name}
+                                    </Badge>
+                                ))}
+                            </div>
+                        )}
 
-                <div className="absolute top-2.5 right-2.5 flex size-7 items-center justify-center rounded-full bg-black/35 text-white backdrop-blur-sm">
-                    <MoreVertical className="size-3.5" />
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-3 pt-10 pb-3">
+                            <h3 className="font-serif text-sm leading-tight font-bold tracking-wide text-white uppercase line-clamp-2">
+                                {book.title}
+                            </h3>
+                            <p className="mt-1 text-xs text-white/80 line-clamp-1">
+                                {book.author}
+                            </p>
+                        </div>
+                    </Link>
+
+                    {isMine && (
+                        <div
+                            className="absolute top-2.5 right-2.5"
+                            onClick={(event) => event.preventDefault()}
+                        >
+                            <LibraryBookQuickMenu
+                                book={book}
+                                userBook={userBook}
+                                onOpenHighlights={() =>
+                                    setHighlightsOpen(true)
+                                }
+                                onOpenNotes={() => setNotesOpen(true)}
+                                onRemove={() => setRemoveOpen(true)}
+                            />
+                        </div>
+                    )}
                 </div>
 
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-3 pt-10 pb-3">
-                    <h3 className="font-serif text-sm leading-tight font-bold tracking-wide text-white uppercase line-clamp-2">
-                        {book.title}
-                    </h3>
-                    <p className="mt-1 text-xs text-white/80 line-clamp-1">
-                        {book.author}
-                    </p>
-                </div>
-            </Link>
+                <div className="flex flex-1 flex-col gap-2 p-3">
+                    <Link href={paths.libraryShow(book.uuid)} className="min-h-0">
+                        <h4 className="font-serif text-sm font-semibold leading-snug line-clamp-2 hover:underline">
+                            {book.title}
+                        </h4>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                            {book.author}
+                        </p>
+                    </Link>
 
-            <div className="flex flex-1 flex-col gap-2 p-3">
-                <div className="min-h-0">
-                    <h4 className="font-serif text-sm font-semibold leading-snug line-clamp-2">
-                        {book.title}
-                    </h4>
-                    <p className="text-xs text-muted-foreground line-clamp-1">
-                        {book.author}
-                    </p>
-                </div>
-
-                {scope === 'mine' &&
-                    userBook &&
-                    userBook.status === 'in_progress' && (
+                    {isMine && userBook.status === 'in_progress' && (
                         <div className="space-y-1">
                             <div className="h-1 overflow-hidden rounded-full bg-secondary">
                                 <div
@@ -108,33 +154,107 @@ function LibraryBookCard({
                         </div>
                     )}
 
-                {showAddToLibrary && !inLibrary && (
-                    <Form
-                        action={paths.addToLibrary(book.uuid)}
-                        method="post"
-                        className="mt-auto"
-                        onSuccess={() =>
-                            toast.success('Added to your library')
-                        }
-                    >
-                        <Button
-                            type="submit"
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-xs"
-                        >
-                            Add to My Library
-                        </Button>
-                    </Form>
-                )}
+                    {isMine && (
+                        <div className="mt-auto flex overflow-hidden rounded-lg border border-border/70 bg-secondary/40">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 flex-1 rounded-none border-r border-border/70 text-xs"
+                                onClick={() => setScheduleOpen(true)}
+                            >
+                                <Calendar className="size-3.5" />
+                                {t('library_schedule')}
+                            </Button>
+                            {canDownload ? (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 flex-1 rounded-none text-xs"
+                                    asChild
+                                >
+                                    <a
+                                        href={paths.readerFile(book.uuid)}
+                                        download
+                                    >
+                                        <Download className="size-3.5" />
+                                        {t('library_download')}
+                                    </a>
+                                </Button>
+                            ) : (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 flex-1 rounded-none text-xs"
+                                    disabled
+                                >
+                                    <Download className="size-3.5" />
+                                    {t('library_download')}
+                                </Button>
+                            )}
+                        </div>
+                    )}
 
-                {inLibrary && scope === 'public' && (
-                    <p className="mt-auto text-[10px] font-medium text-primary">
-                        In your library
-                    </p>
-                )}
-            </div>
-        </article>
+                    {showAddToLibrary && !inLibrary && (
+                        <Form
+                            action={paths.addToLibrary(book.uuid)}
+                            method="post"
+                            className="mt-auto"
+                            onSuccess={() =>
+                                toast.success('Added to your library')
+                            }
+                        >
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-xs"
+                            >
+                                Add to My Library
+                            </Button>
+                        </Form>
+                    )}
+
+                    {inLibrary && scope === 'public' && (
+                        <p className="mt-auto text-[10px] font-medium text-primary">
+                            In your library
+                        </p>
+                    )}
+                </div>
+            </article>
+
+            {isMine && (
+                <>
+                    <ScheduleBookModal
+                        open={scheduleOpen}
+                        onOpenChange={setScheduleOpen}
+                        book={book}
+                        userBookId={userBook.id}
+                        defaultDate={userBook.scheduled_at}
+                    />
+                    <BookHighlightsModal
+                        open={highlightsOpen}
+                        onOpenChange={setHighlightsOpen}
+                        book={book}
+                    />
+                    <BookNotesModal
+                        open={notesOpen}
+                        onOpenChange={setNotesOpen}
+                        book={book}
+                    />
+                    <ConfirmDeleteDialog
+                        open={removeOpen}
+                        onOpenChange={setRemoveOpen}
+                        onConfirm={confirmRemove}
+                        title={t('library_remove_confirm_title')}
+                        description={t('library_remove_confirm_desc')}
+                        confirmLabel={t('library_remove')}
+                        isLoading={removing}
+                    />
+                </>
+            )}
+        </>
     );
 }
 

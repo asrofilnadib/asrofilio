@@ -2,6 +2,7 @@
 export const paths = {
     library: '/library',
     libraryShow: (bookUuid: string) => `/library/${bookUuid}`,
+    libraryAnnotations: (bookUuid: string) => `/library/${bookUuid}/annotations`,
     reader: (bookUuid: string) => `/read/${bookUuid}`,
     readerFile: (bookUuid: string) => `/read/${bookUuid}/file`,
     readerProgress: (bookUuid: string) => `/read/${bookUuid}/progress`,

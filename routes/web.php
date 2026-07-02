@@ -9,8 +9,8 @@ use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Auth\GoogleAuthController;
-use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\BookCoverController;
+use App\Http\Controllers\BookmarkController;
 use App\Http\Controllers\BookSearchController;
 use App\Http\Controllers\HighlightController;
 use App\Http\Controllers\HomeController;
@@ -63,6 +63,8 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('/vocabulary/{vocabularyItem}', [VocabularyController::class, 'destroy'])->name('vocabulary.destroy');
 
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+    Route::get('/library/{book}/annotations', [LibraryController::class, 'annotations'])->name('library.annotations');
 
     Route::get('/read/{book}', [ReaderController::class, 'show'])->name('reader.show');
     Route::get('/read/{book}/file', [ReaderController::class, 'file'])->name('reader.file');
