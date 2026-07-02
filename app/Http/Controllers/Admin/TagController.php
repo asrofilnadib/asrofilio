@@ -19,7 +19,7 @@ class TagController extends Controller
     {
         $this->authorize('viewAny', Tag::class);
 
-        $tags = Tag::query()->withCount('books')->orderBy('name')->paginate(15);
+        $tags = Tag::query()->withCount('books')->orderBy('name')->get();
 
         return Inertia::render('admin/tags/index', [
             'tags' => $tags,

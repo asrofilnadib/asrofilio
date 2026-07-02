@@ -11,7 +11,6 @@ use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
 use App\Services\AdminUserProfileService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -24,18 +23,11 @@ class UserController extends Controller
         private AdminUserProfileService $profile,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(): Response
     {
         $this->authorize('viewAny', User::class);
 
         $users = User::query()
-            ->when($request->filled('search'), function ($q) use ($request): void {
-                $search = $request->string('search')->toString();
-                $q->where(function ($query) use ($search): void {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                });
-            })
             ->withCount([
                 'userBooks',
                 'userBooks as reading_count' => fn ($q) => $q->where('status', ReadingStatus::InProgress),
@@ -43,12 +35,10 @@ class UserController extends Controller
                 'notes',
             ])
             ->latest()
-            ->paginate(15)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('admin/users/index', [
             'users' => $users,
-            'filters' => ['search' => $request->string('search')->toString() ?: null],
             'roles' => collect(UserRole::cases())->map(fn (UserRole $role) => [
                 'value' => $role->value,
                 'label' => ucfirst($role->value),

@@ -1,9 +1,10 @@
 import { Form, Head, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { AdminDataTable } from '@/components/admin/admin-data-table';
 import { ConfirmDeleteDialog } from '@/components/modals/confirm-delete-dialog';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,27 +16,77 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import AdminLayout from '@/layouts/admin-layout';
 import { paths } from '@/lib/paths';
-import type { Paginated, Tag } from '@/types/book';
+import type { Tag } from '@/types/book';
+
+type AdminTagRow = Tag & {
+    books_count?: number;
+};
 
 type AdminTagsIndexProps = {
-    tags: Paginated<Tag>;
+    tags: AdminTagRow[];
 };
 
 function AdminTagsIndex({ tags }: AdminTagsIndexProps) {
     const [formOpen, setFormOpen] = useState(false);
-    const [editing, setEditing] = useState<Tag | null>(null);
+    const [editing, setEditing] = useState<AdminTagRow | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
+
+    const columns = useMemo(
+        () => [
+            {
+                id: 'name',
+                header: 'Name',
+                cell: (tag: AdminTagRow) => (
+                    <span className="font-medium">{tag.name}</span>
+                ),
+            },
+            {
+                id: 'slug',
+                header: 'Slug',
+                cell: (tag: AdminTagRow) => (
+                    <span className="text-muted-foreground">{tag.slug}</span>
+                ),
+            },
+            {
+                id: 'books',
+                header: 'Books',
+                headerClassName: 'text-right',
+                cellClassName: 'text-right tabular-nums',
+                cell: (tag: AdminTagRow) => tag.books_count ?? 0,
+            },
+            {
+                id: 'actions',
+                header: '',
+                headerClassName: 'w-24',
+                cellClassName: 'w-24',
+                cell: (tag: AdminTagRow) => (
+                    <div className="flex gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                                setEditing(tag);
+                                setFormOpen(true);
+                            }}
+                        >
+                            <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeleteId(tag.id)}
+                        >
+                            <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                    </div>
+                ),
+            },
+        ],
+        [],
+    );
 
     function confirmDelete() {
         if (!deleteId) {
@@ -56,65 +107,33 @@ function AdminTagsIndex({ tags }: AdminTagsIndexProps) {
             <Head title="Admin — Tags" />
 
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h1 className="font-serif text-3xl font-bold">Tags</h1>
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <h1 className="font-serif text-3xl font-bold">Tags</h1>
+                        <p className="text-muted-foreground">
+                            Flexible labels for books
+                        </p>
+                    </div>
                     <Button
                         onClick={() => {
                             setEditing(null);
                             setFormOpen(true);
                         }}
+                        className="shrink-0"
                     >
                         <Plus className="size-4" />
                         Add tag
                     </Button>
                 </div>
 
-                <div className="rounded-lg border border-border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Slug</TableHead>
-                                <TableHead className="w-24" />
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {tags.data.map((tag) => (
-                                <TableRow key={tag.id}>
-                                    <TableCell className="font-medium">
-                                        {tag.name}
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">
-                                        {tag.slug}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => {
-                                                    setEditing(tag);
-                                                    setFormOpen(true);
-                                                }}
-                                            >
-                                                <Pencil className="size-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() =>
-                                                    setDeleteId(tag.id)
-                                                }
-                                            >
-                                                <Trash2 className="size-4 text-destructive" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
+                <AdminDataTable
+                    items={tags}
+                    searchKeys={['name', 'slug']}
+                    searchPlaceholder="Search tags…"
+                    emptyMessage="No tags found"
+                    columns={columns}
+                    rowKey={(tag) => tag.id}
+                />
             </div>
 
             <Dialog open={formOpen} onOpenChange={setFormOpen}>

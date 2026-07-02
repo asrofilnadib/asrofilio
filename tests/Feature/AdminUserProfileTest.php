@@ -114,16 +114,20 @@ test('admin users index includes activity counts', function () {
     ]);
 
     $response = $this->actingAs($admin)
-        ->get(route('admin.users.index', ['search' => $member->email]));
+        ->get(route('admin.users.index'));
 
     $response
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('admin/users/index')
-            ->has('users.data', 1)
-            ->where('users.data.0.id', $member->id)
-            ->where('users.data.0.user_books_count', 1)
-            ->where('users.data.0.reading_count', 1)
-            ->where('users.data.0.highlights_count', 1)
+            ->has('users')
+            ->where('users', function ($users) use ($member): bool {
+                $row = collect($users)->firstWhere('id', $member->id);
+
+                return $row !== null
+                    && $row['user_books_count'] === 1
+                    && $row['reading_count'] === 1
+                    && $row['highlights_count'] === 1;
+            })
         );
 });

@@ -19,7 +19,7 @@ class GenreController extends Controller
     {
         $this->authorize('viewAny', Genre::class);
 
-        $genres = Genre::query()->orderBy('sort_order')->paginate(15);
+        $genres = Genre::query()->orderBy('sort_order')->get();
 
         return Inertia::render('admin/genres/index', [
             'genres' => $genres,

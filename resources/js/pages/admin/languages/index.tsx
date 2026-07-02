@@ -1,9 +1,10 @@
 import { Form, Head, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { AdminDataTable } from '@/components/admin/admin-data-table';
 import { ConfirmDeleteDialog } from '@/components/modals/confirm-delete-dialog';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,20 +16,12 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import AdminLayout from '@/layouts/admin-layout';
 import { paths } from '@/lib/paths';
-import type { Language, Paginated } from '@/types/book';
+import type { Language } from '@/types/book';
 
 type AdminLanguagesIndexProps = {
-    languages: Paginated<Language>;
+    languages: Language[];
 };
 
 function AdminLanguagesIndex({ languages }: AdminLanguagesIndexProps) {
@@ -36,6 +29,51 @@ function AdminLanguagesIndex({ languages }: AdminLanguagesIndexProps) {
     const [editing, setEditing] = useState<Language | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
+
+    const columns = useMemo(
+        () => [
+            {
+                id: 'code',
+                header: 'Code',
+                cell: (language: Language) => (
+                    <span className="font-mono text-sm">{language.code}</span>
+                ),
+            },
+            {
+                id: 'name',
+                header: 'Name',
+                cell: (language: Language) => language.name,
+            },
+            {
+                id: 'actions',
+                header: '',
+                headerClassName: 'w-24',
+                cellClassName: 'w-24',
+                cell: (language: Language) => (
+                    <div className="flex gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                                setEditing(language);
+                                setFormOpen(true);
+                            }}
+                        >
+                            <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeleteId(language.id)}
+                        >
+                            <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                    </div>
+                ),
+            },
+        ],
+        [],
+    );
 
     function confirmDelete() {
         if (!deleteId) {
@@ -56,65 +94,35 @@ function AdminLanguagesIndex({ languages }: AdminLanguagesIndexProps) {
             <Head title="Admin — Languages" />
 
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                    <h1 className="font-serif text-3xl font-bold">
-                        Languages
-                    </h1>
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <h1 className="font-serif text-3xl font-bold">
+                            Languages
+                        </h1>
+                        <p className="text-muted-foreground">
+                            Supported book languages
+                        </p>
+                    </div>
                     <Button
                         onClick={() => {
                             setEditing(null);
                             setFormOpen(true);
                         }}
+                        className="shrink-0"
                     >
                         <Plus className="size-4" />
                         Add language
                     </Button>
                 </div>
 
-                <div className="rounded-lg border border-border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead className="w-24" />
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {languages.data.map((lang) => (
-                                <TableRow key={lang.id}>
-                                    <TableCell className="font-mono text-sm">
-                                        {lang.code}
-                                    </TableCell>
-                                    <TableCell>{lang.name}</TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => {
-                                                    setEditing(lang);
-                                                    setFormOpen(true);
-                                                }}
-                                            >
-                                                <Pencil className="size-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() =>
-                                                    setDeleteId(lang.id)
-                                                }
-                                            >
-                                                <Trash2 className="size-4 text-destructive" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
+                <AdminDataTable
+                    items={languages}
+                    searchKeys={['code', 'name']}
+                    searchPlaceholder="Search languages…"
+                    emptyMessage="No languages found"
+                    columns={columns}
+                    rowKey={(language) => language.id}
+                />
             </div>
 
             <Dialog open={formOpen} onOpenChange={setFormOpen}>

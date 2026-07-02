@@ -19,7 +19,7 @@ class LanguageController extends Controller
     {
         $this->authorize('viewAny', Language::class);
 
-        $languages = Language::query()->orderBy('name')->paginate(15);
+        $languages = Language::query()->orderBy('name')->get();
 
         return Inertia::render('admin/languages/index', [
             'languages' => $languages,

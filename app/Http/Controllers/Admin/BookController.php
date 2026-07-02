@@ -13,7 +13,6 @@ use App\Models\Language;
 use App\Models\Tag;
 use App\Services\BookFileService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,26 +25,17 @@ class BookController extends Controller
         private BookFileService $bookFileService,
     ) {}
 
-    public function index(Request $request): Response
+    public function index(): Response
     {
         $this->authorize('viewAny', Book::class);
 
         $books = Book::query()
             ->with(['language', 'genres', 'creator:id,name'])
-            ->when($request->filled('search'), function ($q) use ($request): void {
-                $search = $request->string('search')->toString();
-                $q->where(function ($q) use ($search): void {
-                    $q->where('title', 'like', "%{$search}%")
-                        ->orWhere('author', 'like', "%{$search}%");
-                });
-            })
             ->latest()
-            ->paginate(15)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('admin/books/index', [
             'books' => $books,
-            'filters' => ['search' => $request->string('search')->toString() ?: null],
             'languages' => Language::query()->orderBy('name')->get(['id', 'code', 'name']),
             'genres' => Genre::active()->get(['id', 'name', 'slug']),
             'tags' => Tag::query()->orderBy('name')->get(['id', 'name', 'slug']),

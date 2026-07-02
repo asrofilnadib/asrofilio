@@ -1,9 +1,10 @@
 import { Form, Head, router } from '@inertiajs/react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { AdminDataTable } from '@/components/admin/admin-data-table';
 import { ConfirmDeleteDialog } from '@/components/modals/confirm-delete-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,20 +18,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
 import AdminLayout from '@/layouts/admin-layout';
 import { paths } from '@/lib/paths';
-import type { Genre, Paginated } from '@/types/book';
+import type { Genre } from '@/types/book';
 
 type AdminGenresIndexProps = {
-    genres: Paginated<Genre>;
+    genres: Genre[];
 };
 
 function AdminGenresIndex({ genres }: AdminGenresIndexProps) {
@@ -39,13 +32,69 @@ function AdminGenresIndex({ genres }: AdminGenresIndexProps) {
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
 
+    const columns = useMemo(
+        () => [
+            {
+                id: 'name',
+                header: 'Name',
+                cell: (genre: Genre) => (
+                    <span className="font-medium">{genre.name}</span>
+                ),
+            },
+            {
+                id: 'slug',
+                header: 'Slug',
+                cell: (genre: Genre) => (
+                    <span className="text-muted-foreground">{genre.slug}</span>
+                ),
+            },
+            {
+                id: 'order',
+                header: 'Order',
+                cell: (genre: Genre) => genre.sort_order ?? 0,
+            },
+            {
+                id: 'active',
+                header: 'Active',
+                cell: (genre: Genre) => (
+                    <Badge variant={genre.is_active ? 'default' : 'outline'}>
+                        {genre.is_active ? 'Active' : 'Inactive'}
+                    </Badge>
+                ),
+            },
+            {
+                id: 'actions',
+                header: '',
+                headerClassName: 'w-24',
+                cellClassName: 'w-24',
+                cell: (genre: Genre) => (
+                    <div className="flex gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                                setEditing(genre);
+                                setFormOpen(true);
+                            }}
+                        >
+                            <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setDeleteId(genre.id)}
+                        >
+                            <Trash2 className="size-4 text-destructive" />
+                        </Button>
+                    </div>
+                ),
+            },
+        ],
+        [],
+    );
+
     function openCreate() {
         setEditing(null);
-        setFormOpen(true);
-    }
-
-    function openEdit(genre: Genre) {
-        setEditing(genre);
         setFormOpen(true);
     }
 
@@ -68,79 +117,29 @@ function AdminGenresIndex({ genres }: AdminGenresIndexProps) {
             <Head title="Admin — Genres" />
 
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
                     <div>
                         <h1 className="font-serif text-3xl font-bold">
                             Genres
                         </h1>
+                        <p className="text-muted-foreground">
+                            Organize books by category
+                        </p>
                     </div>
-                    <Button onClick={openCreate}>
+                    <Button onClick={openCreate} className="shrink-0">
                         <Plus className="size-4" />
                         Add genre
                     </Button>
                 </div>
 
-                <div className="rounded-lg border border-border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Slug</TableHead>
-                                <TableHead>Order</TableHead>
-                                <TableHead>Active</TableHead>
-                                <TableHead className="w-24" />
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {genres.data.map((genre) => (
-                                <TableRow key={genre.id}>
-                                    <TableCell className="font-medium">
-                                        {genre.name}
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground">
-                                        {genre.slug}
-                                    </TableCell>
-                                    <TableCell>
-                                        {genre.sort_order ?? 0}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant={
-                                                genre.is_active
-                                                    ? 'default'
-                                                    : 'outline'
-                                            }
-                                        >
-                                            {genre.is_active
-                                                ? 'Active'
-                                                : 'Inactive'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openEdit(genre)}
-                                            >
-                                                <Pencil className="size-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() =>
-                                                    setDeleteId(genre.id)
-                                                }
-                                            >
-                                                <Trash2 className="size-4 text-destructive" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
+                <AdminDataTable
+                    items={genres}
+                    searchKeys={['name', 'slug']}
+                    searchPlaceholder="Search genres…"
+                    emptyMessage="No genres found"
+                    columns={columns}
+                    rowKey={(genre) => genre.id}
+                />
             </div>
 
             <Dialog open={formOpen} onOpenChange={setFormOpen}>

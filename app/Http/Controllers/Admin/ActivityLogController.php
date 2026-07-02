@@ -4,30 +4,22 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ActivityLogController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(): Response
     {
         $this->authorize('viewAny', ActivityLog::class);
 
         $logs = ActivityLog::query()
             ->with(['user:id,name,email', 'subject'])
-            ->when($request->filled('action'), fn ($q) => $q->where('action', $request->string('action')))
-            ->when($request->filled('user_id'), fn ($q) => $q->where('user_id', $request->integer('user_id')))
             ->latest()
-            ->paginate(25)
-            ->withQueryString();
+            ->get();
 
         return Inertia::render('admin/logs/index', [
             'logs' => $logs,
-            'filters' => [
-                'action' => $request->string('action')->toString() ?: null,
-                'user_id' => $request->integer('user_id') ?: null,
-            ],
         ]);
     }
 
@@ -42,7 +34,7 @@ class ActivityLogController extends Controller
             'logs' => ActivityLog::query()
                 ->with(['user:id,name,email', 'subject'])
                 ->latest()
-                ->paginate(25),
+                ->get(),
         ]);
     }
 }
