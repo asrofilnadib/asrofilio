@@ -16,6 +16,7 @@ type LibraryIndexProps = {
     books: Paginated<Book & { user_book?: UserBook | null; userBooks?: UserBook[] }>;
     genres: Genre[];
     counts: { mine: number; public: number };
+    featuredBooks?: Book[];
     filters: LibraryFilters & {
         scope: 'mine' | 'public';
         status?: ReadingStatus | null;

@@ -2,7 +2,9 @@
 
 use App\Models\Book;
 use App\Models\User;
+use App\Services\LibraryBrowseService;
 use Database\Seeders\GenreSeeder;
+use Illuminate\Http\Request;
 
 test('library shows all books when no genre filter is applied', function () {
     $this->seed(GenreSeeder::class);
@@ -96,7 +98,7 @@ test('public library includes user_book only for books in user library', functio
         );
 });
 
-test('library can load additional pages for infinite scroll', function () {
+test('library browse honors page only for inertia partial requests', function () {
     $this->seed(GenreSeeder::class);
 
     foreach (range(1, 15) as $index) {
@@ -107,13 +109,58 @@ test('library can load additional pages for infinite scroll', function () {
         attachFictionGenre($book);
     }
 
-    $this->get(route('library.index', ['page' => 2]))
+    $service = app(LibraryBrowseService::class);
+
+    $fullRequest = Request::create('/library', 'GET', [
+        'page' => 6,
+        'scope' => 'public',
+    ]);
+
+    $partialRequest = Request::create('/library', 'GET', ['page' => 2]);
+    $partialRequest->headers->set('X-Inertia-Partial-Data', 'books');
+
+    expect($service->browse($fullRequest)['books']->currentPage())->toBe(1)
+        ->and($service->browse($partialRequest)['books']->currentPage())->toBe(2)
+        ->and($service->browse($partialRequest)['books']->count())->toBe(3);
+});
+
+test('full page library refresh ignores page query parameter', function () {
+    $this->seed(GenreSeeder::class);
+
+    foreach (range(1, 15) as $index) {
+        $book = Book::factory()->create([
+            'is_public' => true,
+            'title' => sprintf('Refresh Book %02d', $index),
+        ]);
+        attachFictionGenre($book);
+    }
+
+    $this->get(route('library.index', ['page' => 6, 'scope' => 'public']))
         ->assertOk()
         ->assertInertia(fn ($page) => $page
             ->component('library/index')
-            ->has('books.data', 3)
-            ->where('books.current_page', 2)
-            ->where('books.per_page', 12)
+            ->has('books.data', 12)
+            ->where('books.current_page', 1)
+            ->has('featuredBooks')
+        );
+});
+
+test('public library includes featured books for carousel', function () {
+    $this->seed(GenreSeeder::class);
+
+    $book = Book::factory()->create([
+        'is_public' => true,
+        'title' => 'Featured Carousel Book',
+        'metadata' => ['cover_url' => 'https://example.com/cover.jpg'],
+    ]);
+    attachFictionGenre($book);
+
+    $this->get(route('library.index', ['scope' => 'public']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('library/index')
+            ->has('featuredBooks', 1)
+            ->where('featuredBooks.0.title', 'Featured Carousel Book')
         );
 });
 

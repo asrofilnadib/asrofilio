@@ -25,7 +25,8 @@ class LibraryBrowseService
      *         genres: list<string>|null,
      *         status: string|null,
      *         sort: string
-     *     }
+     *     },
+     *     featuredBooks?: Collection<int, Book>
      * }
      */
     public function browse(Request $request, ?string $forcedScope = null): array
@@ -72,8 +73,10 @@ class LibraryBrowseService
 
         $sort->applyTo($query);
 
+        $page = $this->resolveBooksPage($request);
+
         $books = $query
-            ->paginate(12)
+            ->paginate(perPage: 12, page: $page)
             ->withQueryString();
 
         if ($user) {
@@ -95,7 +98,37 @@ class LibraryBrowseService
                 'status' => $status !== '' ? $status : null,
                 'sort' => $sort->value,
             ],
+            ...($scope === 'public' ? ['featuredBooks' => $this->featuredPublicBooks($user)] : []),
         ];
+    }
+
+    /**
+     * @return Collection<int, Book>
+     */
+    private function featuredPublicBooks(?User $user): Collection
+    {
+        $query = Book::query()
+            ->where('is_public', true)
+            ->with(['genres'])
+            ->withCount('userBooks')
+            ->orderByDesc('user_books_count')
+            ->orderByDesc('created_at')
+            ->limit(16);
+
+        if ($user) {
+            $query->with(['userBooks' => fn ($q) => $q->where('user_id', $user->id)]);
+        }
+
+        return $query
+            ->get()
+            ->each(function (Book $book) use ($user): void {
+                if ($user) {
+                    $book->setAttribute('user_book', $book->userBooks->first());
+                }
+            })
+            ->filter(fn (Book $book): bool => $book->cover_url !== null)
+            ->take(8)
+            ->values();
     }
 
     /**
@@ -114,6 +147,18 @@ class LibraryBrowseService
         return collect($request->input('genres', []))
             ->filter(fn ($genre): bool => is_string($genre) && $genre !== '')
             ->values();
+    }
+
+    private function resolveBooksPage(Request $request): int
+    {
+        $page = max(1, $request->integer('page', 1));
+        $partialData = $request->header('X-Inertia-Partial-Data', '');
+
+        if ($partialData !== '' && str_contains($partialData, 'books')) {
+            return $page;
+        }
+
+        return 1;
     }
 
     /**

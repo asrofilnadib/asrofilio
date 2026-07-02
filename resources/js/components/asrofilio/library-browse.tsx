@@ -4,6 +4,7 @@ import type { FormEvent, ReactNode } from 'react';
 import { useState } from 'react';
 
 import { LibraryBookCard } from '@/components/asrofilio/library-book-card';
+import { PopularBooksCarousel } from '@/components/asrofilio/popular-books-carousel';
 import {
     LibrarySidebar,
     type LibraryFilters,
@@ -39,6 +40,7 @@ type LibraryBrowseProps = {
     genres: Genre[];
     counts: { mine: number; public: number };
     filters: LibraryFilters & { scope: 'mine' | 'public' };
+    featuredBooks?: Book[];
     isGuest?: boolean;
     showPublicBanner?: boolean;
     header?: ReactNode;
@@ -77,6 +79,7 @@ function LibraryBrowse({
     genres,
     counts,
     filters,
+    featuredBooks = [],
     isGuest = false,
     showPublicBanner = false,
     header,
@@ -181,7 +184,13 @@ function LibraryBrowse({
                         )}
                     </div>
 
-                    {(showPublicBanner || filters.scope === 'public') && (
+                    {filters.scope === 'public' && featuredBooks.length > 0 && (
+                        <PopularBooksCarousel books={featuredBooks} />
+                    )}
+
+                    {showPublicBanner &&
+                        filters.scope === 'public' &&
+                        featuredBooks.length === 0 && (
                         <div className="rounded-2xl border border-border/70 bg-card px-5 py-4 shadow-sm">
                             <h2 className="font-serif text-lg font-semibold">
                                 {t('library_public_title')}

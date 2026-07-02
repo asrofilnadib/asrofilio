@@ -69,6 +69,10 @@ const messages = {
         library_in_your_library: 'In your library',
         library_added_to_library: 'Added to your library',
         library_loading_more: 'Loading more books…',
+        library_popular_picks: 'Popular picks',
+        library_popular_picks_desc: 'Bestsellers from the public library',
+        library_carousel_prev: 'Previous slide',
+        library_carousel_next: 'Next slide',
     },
     id: {
         nav_home: 'Beranda',
@@ -136,6 +140,10 @@ const messages = {
         library_in_your_library: 'Sudah di perpustakaanmu',
         library_added_to_library: 'Ditambahkan ke perpustakaanmu',
         library_loading_more: 'Memuat buku lainnya…',
+        library_popular_picks: 'Pilihan populer',
+        library_popular_picks_desc: 'Buku terpopuler di perpustakaan publik',
+        library_carousel_prev: 'Slide sebelumnya',
+        library_carousel_next: 'Slide berikutnya',
     },
 } as const;
 

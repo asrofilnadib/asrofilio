@@ -17,6 +17,18 @@ type UseLibraryInfiniteScrollOptions = {
     books: Paginated<LibraryBook>;
 };
 
+function stripPageFromBrowserUrl(): void {
+    const url = new URL(window.location.href);
+
+    if (!url.searchParams.has('page')) {
+        return;
+    }
+
+    url.searchParams.delete('page');
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState(window.history.state, '', nextUrl);
+}
+
 function useLibraryInfiniteScroll({
     basePath,
     filters,
@@ -40,6 +52,10 @@ function useLibraryInfiniteScroll({
     const [lastPage, setLastPage] = useState(books.last_page);
     const [loading, setLoading] = useState(false);
     const sentinelRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        stripPageFromBrowserUrl();
+    }, []);
 
     useEffect(() => {
         if (filterKeyRef.current === filterKey) {
@@ -77,7 +93,10 @@ function useLibraryInfiniteScroll({
                     setCurrentPage(paginated.current_page);
                     setLastPage(paginated.last_page);
                 },
-                onFinish: () => setLoading(false),
+                onFinish: () => {
+                    setLoading(false);
+                    stripPageFromBrowserUrl();
+                },
             },
         );
     }, [basePath, currentPage, filters, hasMore, loading]);

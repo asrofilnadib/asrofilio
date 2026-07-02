@@ -57,6 +57,7 @@ type HomeProps = {
     books?: Paginated<Book & { user_book?: UserBook | null; userBooks?: UserBook[] }>;
     genres?: Genre[];
     counts?: { mine: number; public: number };
+    featuredBooks?: Book[];
     filters?: LibraryFilters & { scope: 'mine' | 'public' };
     currentlyReading?: Array<{ book: Book; user_book: UserBook }>;
     recentHighlights?: Highlight[];
@@ -76,14 +77,21 @@ function GuestHome({
     books,
     genres,
     counts,
+    featuredBooks,
     filters,
-}: Required<Pick<HomeProps, 'books' | 'genres' | 'counts' | 'filters'>>) {
+}: Required<
+    Pick<
+        HomeProps,
+        'books' | 'genres' | 'counts' | 'featuredBooks' | 'filters'
+    >
+>) {
     return (
         <LibraryBrowse
             basePath={home.url()}
             books={books}
             genres={genres}
             counts={counts}
+            featuredBooks={featuredBooks}
             filters={filters}
             isGuest
             showPublicBanner
@@ -433,6 +441,7 @@ function Home(props: HomeProps) {
                     books={props.books}
                     genres={props.genres}
                     counts={props.counts}
+                    featuredBooks={props.featuredBooks ?? []}
                     filters={props.filters}
                 />
             ) : (
