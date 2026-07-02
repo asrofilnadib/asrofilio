@@ -276,4 +276,12 @@
     .font-serif {
         font-family: var(--font-serif);
     }
+
+    .reading-progress-track {
+        background-color: color-mix(in oklab, var(--primary) 18%, var(--muted));
+    }
+
+    .reading-progress-fill {
+        background-color: var(--primary);
+    }
 }

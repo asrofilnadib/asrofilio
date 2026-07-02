@@ -4,6 +4,7 @@ import { useState, type MouseEvent } from 'react';
 import { toast } from 'sonner';
 
 import { LibraryBookQuickMenu } from '@/components/asrofilio/library-book-quick-menu';
+import { ReadingProgressBar } from '@/components/asrofilio/reading-progress-bar';
 import { BookHighlightsModal } from '@/components/modals/book-highlights-modal';
 import { BookNotesModal } from '@/components/modals/book-notes-modal';
 import { ConfirmDeleteDialog } from '@/components/modals/confirm-delete-dialog';
@@ -149,17 +150,7 @@ function LibraryBookCard({
                     </Link>
 
                     {showProgress && (
-                        <div className="space-y-1">
-                            <p className="text-[11px] font-medium text-muted-foreground">
-                                {progress}%
-                            </p>
-                            <div className="h-1 overflow-hidden rounded-full bg-secondary">
-                                <div
-                                    className="h-full rounded-full bg-primary"
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </div>
-                        </div>
+                        <ReadingProgressBar value={progress} size="sm" />
                     )}
 
                     {isMine && (

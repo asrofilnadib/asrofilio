@@ -11,6 +11,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { ReadingProgressBar } from '@/components/asrofilio/reading-progress-bar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -119,12 +120,12 @@ function ReadingCard({ entry }: { entry: AdminUserBookEntry }) {
                         {entry.progress_percent}%
                     </Badge>
                 </div>
-                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div
-                        className="h-full rounded-full bg-primary transition-all"
-                        style={{ width: `${entry.progress_percent}%` }}
-                    />
-                </div>
+                <ReadingProgressBar
+                    value={entry.progress_percent}
+                    showLabel={false}
+                    size="md"
+                    className="mt-3"
+                />
                 <p className="mt-2 text-xs text-muted-foreground">
                     Page {entry.current_page}
                     {entry.book.page_count

@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { LibraryBrowse } from '@/components/asrofilio/library-browse';
 import type { LibraryFilters } from '@/components/asrofilio/library-sidebar';
 import { LoadingAsrofilio } from '@/components/asrofilio/loading-asrofilio';
+import { ReadingProgressBar } from '@/components/asrofilio/reading-progress-bar';
 import { AddBookModal } from '@/components/modals/add-book-modal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -179,14 +180,14 @@ function DashboardHome({
                                                     {featured.book.author}
                                                 </p>
                                                 <div className="mt-4 space-y-2">
-                                                    <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
-                                                        <div
-                                                            className="h-full rounded-full bg-primary transition-all"
-                                                            style={{
-                                                                width: `${featured.user_book.progress_percent}%`,
-                                                            }}
-                                                        />
-                                                    </div>
+                                                    <ReadingProgressBar
+                                                        value={
+                                                            featured.user_book
+                                                                .progress_percent
+                                                        }
+                                                        showLabel={false}
+                                                        size="md"
+                                                    />
                                                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                                                         <span>
                                                             {

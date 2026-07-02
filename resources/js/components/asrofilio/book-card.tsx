@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import { BookOpen, Star } from 'lucide-react';
 
+import { ReadingProgressBar } from '@/components/asrofilio/reading-progress-bar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { paths } from '@/lib/paths';
@@ -78,17 +79,14 @@ function BookCard({
                         {book.author}
                     </p>
                     {showProgress && userBook && status === 'in_progress' && (
-                        <div className="space-y-1">
-                            <div className="h-1.5 overflow-hidden rounded-full bg-secondary">
-                                <div
-                                    className="h-full rounded-full bg-primary transition-all"
-                                    style={{ width: `${progress}%` }}
-                                />
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                {progress}% complete
-                            </p>
-                        </div>
+                        <ReadingProgressBar
+                            value={progress}
+                            labelPosition="below"
+                            labelClassName="text-xs text-muted-foreground"
+                            formatLabel={(progressValue) =>
+                                `${progressValue}% complete`
+                            }
+                        />
                     )}
                     {userBook?.rating && (
                         <div className="flex items-center gap-1 text-amber-600">

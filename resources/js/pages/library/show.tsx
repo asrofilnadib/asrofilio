@@ -13,6 +13,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { ReadingProgressBar } from '@/components/asrofilio/reading-progress-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookHighlightsModal } from '@/components/modals/book-highlights-modal';
@@ -240,19 +241,12 @@ function LibraryShow({
 
                                 <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                                     {userBook.progress_percent > 0 && (
-                                        <div className="flex min-w-[140px] flex-1 items-center gap-2">
-                                            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-background">
-                                                <div
-                                                    className="h-full rounded-full bg-primary"
-                                                    style={{
-                                                        width: `${userBook.progress_percent}%`,
-                                                    }}
-                                                />
-                                            </div>
-                                            <span className="shrink-0 tabular-nums">
-                                                {userBook.progress_percent}%
-                                            </span>
-                                        </div>
+                                        <ReadingProgressBar
+                                            value={userBook.progress_percent}
+                                            labelPosition="inline"
+                                            size="md"
+                                            className="min-w-[140px] flex-1"
+                                        />
                                     )}
                                     {userBook.current_page > 0 && (
                                         <span>
