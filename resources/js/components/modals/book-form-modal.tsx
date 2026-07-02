@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { BookApiSearchPanel } from '@/components/modals/book-api-search-panel';
+import { BookFilePondUpload } from '@/components/admin/book-file-pond-upload';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -96,6 +97,7 @@ function BookFormModal({
                     key={book?.id ?? 'new'}
                     action={action}
                     method={method}
+                    encType="multipart/form-data"
                     resetOnSuccess={!isEditing}
                     onSuccess={() => {
                         toast.success(
@@ -303,22 +305,12 @@ function BookFormModal({
                                 </Label>
                             </div>
 
-                            {!isEditing && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="file">Book file</Label>
-                                    <Input
-                                        id="file"
-                                        name="file"
-                                        type="file"
-                                        accept=".epub,.pdf"
-                                    />
-                                    {errors.file && (
-                                        <p className="text-sm text-destructive">
-                                            {errors.file}
-                                        </p>
-                                    )}
-                                </div>
-                            )}
+                            <BookFilePondUpload
+                                key={book?.id ?? 'new-file'}
+                                existingFileType={book?.file_type}
+                                existingFilePath={book?.file_path}
+                                error={errors.file}
+                            />
 
                             <DialogFooter>
                                 <Button

@@ -285,3 +285,32 @@
         background-color: var(--primary);
     }
 }
+
+/* FilePond — match Asrofilio admin theme */
+.filepond--root {
+    font-family: var(--font-sans);
+    margin-bottom: 0;
+}
+
+.filepond--panel-root {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+}
+
+.filepond--drop-label {
+    color: var(--muted-foreground);
+}
+
+.filepond--label-action {
+    color: var(--primary);
+    text-decoration-color: color-mix(in oklab, var(--primary) 40%, transparent);
+}
+
+.filepond--item-panel {
+    background-color: var(--muted);
+}
+
+.filepond--drip {
+    background-color: color-mix(in oklab, var(--primary) 12%, transparent);
+}
