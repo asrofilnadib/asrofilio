@@ -22,6 +22,9 @@ class DashboardController extends Controller
             'usersRegisteredChart' => $this->dashboard->getUsersRegisteredChart(),
             'activityChart' => $this->dashboard->getActivityChart(),
             'contentOverviewChart' => $this->dashboard->getContentOverviewChart(),
+            'recentUsers' => $this->dashboard->getRecentUsersTable(),
+            'recentBooks' => $this->dashboard->getRecentBooksTable(),
+            'recentActivity' => $this->dashboard->getRecentActivityTable(),
         ]);
     }
 }

@@ -1,5 +1,5 @@
-import { Form, Head, router } from '@inertiajs/react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Form, Head, Link, router } from '@inertiajs/react';
+import { Eye, Pencil, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -33,15 +33,17 @@ import {
 } from '@/components/ui/table';
 import AdminLayout from '@/layouts/admin-layout';
 import { paths } from '@/lib/paths';
-import type { Paginated, User, UserRole } from '@/types';
+import type { AdminUserListRow } from '@/types/admin';
+import type { Paginated, UserRole } from '@/types';
 
 type AdminUsersIndexProps = {
-    users: Paginated<User>;
+    users: Paginated<AdminUserListRow>;
+    filters?: { search?: string | null };
 };
 
-function AdminUsersIndex({ users }: AdminUsersIndexProps) {
+function AdminUsersIndex({ users, filters }: AdminUsersIndexProps) {
     const [formOpen, setFormOpen] = useState(false);
-    const [editing, setEditing] = useState<User | null>(null);
+    const [editing, setEditing] = useState<AdminUserListRow | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [deleting, setDeleting] = useState(false);
 
@@ -67,7 +69,7 @@ function AdminUsersIndex({ users }: AdminUsersIndexProps) {
                 <div>
                     <h1 className="font-serif text-3xl font-bold">Users</h1>
                     <p className="text-muted-foreground">
-                        Manage user accounts and roles
+                        Manage accounts and explore reading activity
                     </p>
                 </div>
 
@@ -75,61 +77,118 @@ function AdminUsersIndex({ users }: AdminUsersIndexProps) {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Email</TableHead>
+                                <TableHead>User</TableHead>
                                 <TableHead>Role</TableHead>
+                                <TableHead className="text-right">
+                                    Library
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    Reading
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    Highlights
+                                </TableHead>
+                                <TableHead className="text-right">
+                                    Notes
+                                </TableHead>
                                 <TableHead>Joined</TableHead>
-                                <TableHead className="w-24" />
+                                <TableHead className="w-28" />
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {users.data.map((user) => (
-                                <TableRow key={user.id}>
-                                    <TableCell className="font-medium">
-                                        {user.name}
-                                    </TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell>
-                                        <Badge
-                                            variant={
-                                                user.role === 'admin'
-                                                    ? 'default'
-                                                    : 'outline'
-                                            }
-                                        >
-                                            {user.role}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground text-sm">
-                                        {new Date(
-                                            user.created_at,
-                                        ).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => {
-                                                    setEditing(user);
-                                                    setFormOpen(true);
-                                                }}
-                                            >
-                                                <Pencil className="size-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() =>
-                                                    setDeleteId(user.id)
-                                                }
-                                            >
-                                                <Trash2 className="size-4 text-destructive" />
-                                            </Button>
-                                        </div>
+                            {users.data.length === 0 ? (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={8}
+                                        className="py-10 text-center text-muted-foreground"
+                                    >
+                                        No users found
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : (
+                                users.data.map((user) => (
+                                    <TableRow key={user.id}>
+                                        <TableCell>
+                                            <Link
+                                                href={paths.admin.user(user.id)}
+                                                className="block hover:underline"
+                                            >
+                                                <span className="font-medium">
+                                                    {user.name}
+                                                </span>
+                                                <span className="block text-xs text-muted-foreground">
+                                                    {user.email}
+                                                </span>
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={
+                                                    user.role === 'admin'
+                                                        ? 'default'
+                                                        : 'outline'
+                                                }
+                                            >
+                                                {user.role}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="text-right tabular-nums">
+                                            {user.user_books_count}
+                                        </TableCell>
+                                        <TableCell className="text-right tabular-nums">
+                                            {user.reading_count}
+                                        </TableCell>
+                                        <TableCell className="text-right tabular-nums">
+                                            {user.highlights_count}
+                                        </TableCell>
+                                        <TableCell className="text-right tabular-nums">
+                                            {user.notes_count}
+                                        </TableCell>
+                                        <TableCell className="text-sm text-muted-foreground">
+                                            {new Date(
+                                                user.created_at,
+                                            ).toLocaleDateString()}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex justify-end gap-1">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    asChild
+                                                    title="View activity"
+                                                >
+                                                    <Link
+                                                        href={paths.admin.user(
+                                                            user.id,
+                                                        )}
+                                                    >
+                                                        <Eye className="size-4" />
+                                                    </Link>
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => {
+                                                        setEditing(user);
+                                                        setFormOpen(true);
+                                                    }}
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() =>
+                                                        setDeleteId(user.id)
+                                                    }
+                                                >
+                                                    <Trash2 className="size-4 text-destructive" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </div>

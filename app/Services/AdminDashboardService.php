@@ -91,4 +91,66 @@ class AdminDashboardService
             ['name' => 'Library links', 'y' => UserBook::query()->count()],
         ];
     }
+
+    /**
+     * @return list<array{id: int, name: string, email: string, role: string, library_count: int, joined_at: string}>
+     */
+    public function getRecentUsersTable(): array
+    {
+        return User::query()
+            ->withCount('userBooks')
+            ->latest()
+            ->limit(8)
+            ->get(['id', 'name', 'email', 'role', 'created_at'])
+            ->map(fn (User $user): array => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role->value,
+                'library_count' => $user->user_books_count,
+                'joined_at' => $user->created_at->toIso8601String(),
+            ])
+            ->all();
+    }
+
+    /**
+     * @return list<array{id: int, uuid: string, title: string, author: string, library_count: int, added_at: string}>
+     */
+    public function getRecentBooksTable(): array
+    {
+        return Book::query()
+            ->withCount('userBooks')
+            ->latest()
+            ->limit(8)
+            ->get(['id', 'uuid', 'title', 'author', 'created_at'])
+            ->map(fn (Book $book): array => [
+                'id' => $book->id,
+                'uuid' => $book->uuid,
+                'title' => $book->title,
+                'author' => $book->author,
+                'library_count' => $book->user_books_count,
+                'added_at' => $book->created_at->toIso8601String(),
+            ])
+            ->all();
+    }
+
+    /**
+     * @return list<array{id: int, action: string, user_name: string|null, user_id: int|null, created_at: string}>
+     */
+    public function getRecentActivityTable(): array
+    {
+        return ActivityLog::query()
+            ->with('user:id,name')
+            ->latest()
+            ->limit(10)
+            ->get(['id', 'user_id', 'action', 'created_at'])
+            ->map(fn (ActivityLog $log): array => [
+                'id' => $log->id,
+                'action' => $log->action,
+                'user_name' => $log->user?->name,
+                'user_id' => $log->user_id,
+                'created_at' => $log->created_at->toIso8601String(),
+            ])
+            ->all();
+    }
 }

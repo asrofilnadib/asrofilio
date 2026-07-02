@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Concerns\LogsActivity;
+use App\Enums\ReadingStatus;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
+use App\Services\AdminUserProfileService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +20,10 @@ class UserController extends Controller
 {
     use LogsActivity;
 
+    public function __construct(
+        private AdminUserProfileService $profile,
+    ) {}
+
     public function index(Request $request): Response
     {
         $this->authorize('viewAny', User::class);
@@ -25,9 +31,17 @@ class UserController extends Controller
         $users = User::query()
             ->when($request->filled('search'), function ($q) use ($request): void {
                 $search = $request->string('search')->toString();
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                $q->where(function ($query) use ($search): void {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
             })
+            ->withCount([
+                'userBooks',
+                'userBooks as reading_count' => fn ($q) => $q->where('status', ReadingStatus::InProgress),
+                'highlights',
+                'notes',
+            ])
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -63,18 +77,21 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')->with('success', 'User created successfully.');
     }
 
-    public function show(User $user): RedirectResponse
+    public function show(User $user): Response
     {
         $this->authorize('view', $user);
 
-        return redirect()->route('admin.users.index');
+        return Inertia::render('admin/users/show', [
+            'user' => $user->only(['id', 'name', 'email', 'role', 'avatar', 'created_at', 'updated_at']),
+            ...$this->profile->getProfile($user),
+        ]);
     }
 
     public function edit(User $user): RedirectResponse
     {
         $this->authorize('update', $user);
 
-        return redirect()->route('admin.users.index');
+        return redirect()->route('admin.users.show', $user);
     }
 
     public function update(UpdateUserRequest $request, User $user): RedirectResponse
