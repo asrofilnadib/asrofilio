@@ -218,10 +218,6 @@ function LibraryBrowse({
                                     book={book}
                                     userBook={resolveUserBook(book)}
                                     scope={filters.scope}
-                                    showAddToLibrary={
-                                        filters.scope === 'public' &&
-                                        Boolean(auth.user)
-                                    }
                                 />
                             ))}
                         </div>

@@ -1,5 +1,5 @@
-import { Form, Link, router } from '@inertiajs/react';
-import { BookOpen, Calendar, Download } from 'lucide-react';
+import { Form, Link, router, usePage } from '@inertiajs/react';
+import { BookOpen, BookPlus, Calendar, Download } from 'lucide-react';
 import { useState, type MouseEvent } from 'react';
 import { toast } from 'sonner';
 
@@ -13,13 +13,13 @@ import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
 import { paths } from '@/lib/paths';
 import { cn } from '@/lib/utils';
+import type { Auth } from '@/types/auth';
 import type { Book, UserBook } from '@/types/book';
 
 type LibraryBookCardProps = {
     book: Book;
     userBook?: UserBook | null;
     scope: 'mine' | 'public';
-    showAddToLibrary?: boolean;
     className?: string;
 };
 
@@ -27,9 +27,9 @@ function LibraryBookCard({
     book,
     userBook,
     scope,
-    showAddToLibrary = false,
     className,
 }: LibraryBookCardProps) {
+    const { auth } = usePage<{ auth: Auth }>().props;
     const { t } = useI18n();
     const [scheduleOpen, setScheduleOpen] = useState(false);
     const [highlightsOpen, setHighlightsOpen] = useState(false);
@@ -41,14 +41,14 @@ function LibraryBookCard({
     const progress = userBook?.progress_percent ?? 0;
     const inLibrary = Boolean(userBook);
     const isMine = scope === 'mine' && inLibrary && userBook;
+    const isPublic = scope === 'public';
+    const showAddButton = isPublic && !inLibrary;
     const cardHref =
         inLibrary && book.file_type
             ? paths.reader(book.uuid)
             : paths.libraryShow(book.uuid);
     const canDownload = Boolean(book.file_type);
-    const showProgress =
-        isMine &&
-        (userBook.status === 'in_progress' || progress > 0);
+    const showProgress = isMine && userBook.status === 'in_progress';
 
     function confirmRemove() {
         if (!userBook) {
@@ -75,11 +75,11 @@ function LibraryBookCard({
         <>
             <article
                 className={cn(
-                    'group flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm transition-shadow hover:shadow-md',
+                    'group flex flex-col rounded-2xl border border-border/70 bg-card shadow-sm transition-shadow hover:shadow-md',
                     className,
                 )}
             >
-                <div className="relative">
+                <div className="relative overflow-hidden rounded-t-2xl">
                     <Link
                         href={cardHref}
                         className="relative block aspect-[3/4] overflow-hidden bg-muted"
@@ -164,24 +164,24 @@ function LibraryBookCard({
 
                     {isMine && (
                         <div
-                            className="mt-auto flex overflow-hidden rounded-xl border border-border/60 bg-secondary/50"
+                            className="mt-auto grid grid-cols-2 divide-x divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-secondary/50"
                             onClick={stopCardNavigation}
                         >
                             <Button
                                 type="button"
                                 variant="ghost"
-                                size="sm"
-                                className="h-9 flex-1 gap-1.5 rounded-none border-r border-border/60 text-xs font-medium hover:bg-background/60"
+                                className="flex h-auto flex-col items-center gap-1 rounded-none px-2 py-2.5 hover:bg-background/60"
                                 onClick={() => setScheduleOpen(true)}
                             >
-                                <Calendar className="size-3.5 shrink-0" />
-                                {t('library_schedule')}
+                                <Calendar className="size-4 shrink-0" />
+                                <span className="text-[10px] font-medium leading-none">
+                                    {t('library_schedule')}
+                                </span>
                             </Button>
                             {canDownload ? (
                                 <Button
                                     variant="ghost"
-                                    size="sm"
-                                    className="h-9 flex-1 gap-1.5 rounded-none text-xs font-medium hover:bg-background/60"
+                                    className="flex h-auto flex-col items-center gap-1 rounded-none px-2 py-2.5 hover:bg-background/60"
                                     asChild
                                 >
                                     <a
@@ -189,48 +189,66 @@ function LibraryBookCard({
                                         download
                                         onClick={stopCardNavigation}
                                     >
-                                        <Download className="size-3.5 shrink-0" />
-                                        {t('library_download')}
+                                        <Download className="size-4 shrink-0" />
+                                        <span className="text-[10px] font-medium leading-none">
+                                            {t('library_download')}
+                                        </span>
                                     </a>
                                 </Button>
                             ) : (
                                 <Button
                                     type="button"
                                     variant="ghost"
-                                    size="sm"
-                                    className="h-9 flex-1 gap-1.5 rounded-none text-xs font-medium"
+                                    className="flex h-auto flex-col items-center gap-1 rounded-none px-2 py-2.5"
                                     disabled
                                 >
-                                    <Download className="size-3.5 shrink-0" />
-                                    {t('library_download')}
+                                    <Download className="size-4 shrink-0" />
+                                    <span className="text-[10px] font-medium leading-none">
+                                        {t('library_download')}
+                                    </span>
                                 </Button>
                             )}
                         </div>
                     )}
 
-                    {showAddToLibrary && !inLibrary && (
+                    {showAddButton && auth.user && (
                         <Form
                             action={paths.addToLibrary(book.uuid)}
                             method="post"
                             className="mt-auto"
                             onSuccess={() =>
-                                toast.success('Added to your library')
+                                toast.success(t('library_added_to_library'))
                             }
                         >
                             <Button
                                 type="submit"
                                 variant="outline"
                                 size="sm"
-                                className="w-full text-xs"
+                                className="h-9 w-full gap-1.5 text-xs font-medium"
                             >
-                                Add to My Library
+                                <BookPlus className="size-3.5 shrink-0" />
+                                {t('library_add_to_my_library')}
                             </Button>
                         </Form>
                     )}
 
-                    {inLibrary && scope === 'public' && (
-                        <p className="mt-auto text-[10px] font-medium text-primary">
-                            In your library
+                    {showAddButton && !auth.user && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-auto h-9 w-full gap-1.5 text-xs font-medium"
+                            asChild
+                        >
+                            <Link href="/login">
+                                <BookPlus className="size-3.5 shrink-0" />
+                                {t('library_add_to_my_library')}
+                            </Link>
+                        </Button>
+                    )}
+
+                    {isPublic && inLibrary && (
+                        <p className="mt-auto rounded-lg border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-center text-[11px] font-medium text-primary">
+                            {t('library_in_your_library')}
                         </p>
                     )}
                 </div>

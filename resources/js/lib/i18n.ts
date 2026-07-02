@@ -65,6 +65,9 @@ const messages = {
         library_status_updated: 'Status updated',
         library_schedule_saved: 'Schedule saved',
         library_removed: 'Removed from library',
+        library_add_to_my_library: 'Add to My Library',
+        library_in_your_library: 'In your library',
+        library_added_to_library: 'Added to your library',
     },
     id: {
         nav_home: 'Beranda',
@@ -128,6 +131,9 @@ const messages = {
         library_status_updated: 'Status diperbarui',
         library_schedule_saved: 'Jadwal disimpan',
         library_removed: 'Dihapus dari perpustakaan',
+        library_add_to_my_library: 'Tambah ke Perpustakaanku',
+        library_in_your_library: 'Sudah di perpustakaanmu',
+        library_added_to_library: 'Ditambahkan ke perpustakaanmu',
     },
 } as const;
 

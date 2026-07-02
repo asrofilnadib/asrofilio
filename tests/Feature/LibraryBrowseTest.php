@@ -72,6 +72,30 @@ test('my library books include user_book for card actions', function () {
         );
 });
 
+test('public library includes user_book only for books in user library', function () {
+    $user = User::factory()->create();
+    $inLibrary = Book::factory()->create(['is_public' => true, 'title' => 'In Library Book']);
+    Book::factory()->create(['is_public' => true, 'title' => 'Public Only Book']);
+
+    $userBook = $user->userBooks()->create(['book_id' => $inLibrary->id]);
+
+    $this->actingAs($user)
+        ->get(route('library.index', ['scope' => 'public']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('library/index')
+            ->has('books.data', 2)
+            ->where('books.data', fn ($books) => collect($books)->contains(
+                fn ($book) => $book['title'] === 'In Library Book'
+                    && $book['user_book']['id'] === $userBook->id,
+            ))
+            ->where('books.data', fn ($books) => collect($books)->contains(
+                fn ($book) => $book['title'] === 'Public Only Book'
+                    && $book['user_book'] === null,
+            ))
+        );
+});
+
 test('user can switch locale', function () {
     $user = User::factory()->create();
 

@@ -14,7 +14,6 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuSub,
     DropdownMenuSubContent,
@@ -82,11 +81,13 @@ function LibraryBookQuickMenu({
                     <MoreVertical className="size-3.5" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel className="line-clamp-1 font-normal text-muted-foreground">
-                    {book.title}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+            <DropdownMenuContent
+                align="end"
+                side="bottom"
+                sideOffset={6}
+                collisionPadding={8}
+                className="w-56"
+            >
                 <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                         <BookMarked className="size-4" />
