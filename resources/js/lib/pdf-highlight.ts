@@ -2,8 +2,9 @@ import type { Highlight } from '@/types/book';
 
 import { DEFAULT_HIGHLIGHT_COLOR } from '@/lib/highlight-colors';
 
-export const DEFAULT_NOTE_QUOTE_COLOR = '#cce5ff';
-export const DEFAULT_NOTE_QUOTE_FOCUS_COLOR = '#93c5fd';
+export const DEFAULT_NOTE_DRAFT_COLOR = '#fef08a';
+export const DEFAULT_NOTE_QUOTE_COLOR = '#fef08a';
+export const DEFAULT_NOTE_QUOTE_FOCUS_COLOR = '#fde047';
 
 export type PdfSelectionRect = {
     top: number;
@@ -203,6 +204,12 @@ export function applyHighlightToSelection(
     mark.style.backgroundColor = color;
     mark.className = 'pdf-highlight';
 
+    const text = selection.toString().trim();
+
+    if (text) {
+        mark.dataset.highlightText = text;
+    }
+
     try {
         range.surroundContents(mark);
     } catch {
@@ -214,6 +221,53 @@ export function applyHighlightToSelection(
     selection.removeAllRanges();
 
     return mark;
+}
+
+export function applyNoteQuoteFromSelection(
+    noteId: number,
+    color: string = DEFAULT_NOTE_DRAFT_COLOR,
+): HTMLElement | null {
+    const selection = window.getSelection();
+
+    if (!selection || selection.isCollapsed) {
+        return null;
+    }
+
+    const range = selection.getRangeAt(0);
+    const mark = document.createElement('mark');
+
+    mark.style.backgroundColor = color;
+    mark.className = 'pdf-note-quote';
+    mark.dataset.noteId = String(noteId);
+
+    try {
+        range.surroundContents(mark);
+    } catch {
+        const fragment = range.extractContents();
+        mark.appendChild(fragment);
+        range.insertNode(mark);
+    }
+
+    selection.removeAllRanges();
+
+    return mark;
+}
+
+export function updateNoteQuoteMarkId(
+    container: HTMLElement,
+    fromId: number,
+    toId: number,
+    color?: string,
+): void {
+    container
+        .querySelectorAll<HTMLElement>(`[data-note-id="${fromId}"]`)
+        .forEach((mark) => {
+            mark.dataset.noteId = String(toId);
+
+            if (color) {
+                mark.style.backgroundColor = color;
+            }
+        });
 }
 
 export function applyQuotedTextMark(
@@ -276,10 +330,33 @@ export function setNoteQuoteFocus(
             ? DEFAULT_NOTE_QUOTE_FOCUS_COLOR
             : DEFAULT_NOTE_QUOTE_COLOR;
         mark.style.boxShadow = isFocused
-            ? '0 0 0 2px rgba(59, 130, 246, 0.45)'
+            ? '0 0 0 2px rgba(234, 179, 8, 0.55)'
             : '';
         mark.style.borderRadius = isFocused ? '2px' : '';
     });
+}
+
+export function removeHighlightMarkByText(
+    container: HTMLElement,
+    text: string,
+): void {
+    container
+        .querySelectorAll(`[data-highlight-text="${CSS.escape(text)}"]`)
+        .forEach((mark) => unwrapMark(mark));
+}
+
+export function updateHighlightMarkColor(
+    container: HTMLElement,
+    text: string,
+    color: string,
+): void {
+    container
+        .querySelectorAll<HTMLElement>(
+            `[data-highlight-text="${CSS.escape(text)}"]`,
+        )
+        .forEach((mark) => {
+            mark.style.backgroundColor = color;
+        });
 }
 
 export function removeNoteQuoteMark(

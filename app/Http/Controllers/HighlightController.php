@@ -55,20 +55,28 @@ class HighlightController extends Controller
         return back()->with('success', 'Highlight saved.');
     }
 
-    public function update(UpdateHighlightRequest $request, Highlight $highlight): RedirectResponse
+    public function update(UpdateHighlightRequest $request, Highlight $highlight): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $highlight);
 
         $highlight->update($request->validated());
 
+        if ($request->wantsJson()) {
+            return response()->json(['highlight' => $highlight->fresh()]);
+        }
+
         return back()->with('success', 'Highlight updated.');
     }
 
-    public function destroy(Highlight $highlight): RedirectResponse
+    public function destroy(Request $request, Highlight $highlight): JsonResponse|RedirectResponse
     {
         $this->authorize('delete', $highlight);
 
         $highlight->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return back()->with('success', 'Highlight deleted.');
     }

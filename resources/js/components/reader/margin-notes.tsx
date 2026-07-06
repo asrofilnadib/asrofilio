@@ -67,104 +67,103 @@ function MarginNotes({
         (note) => parsePageFromCfi(note.cfi_location ?? '') === currentPage,
     );
 
-    const hasContent = pageNotes.length > 0 || draftNote !== null;
     const borderColor = readerBorderColor(theme);
-
-    if (!expanded) {
-        return (
-            <div
-                className={cn(
-                    'pointer-events-auto absolute inset-y-0 right-0 z-10 flex items-center',
-                    className,
-                )}
-            >
-                <Button
-                    type="button"
-                    variant="secondary"
-                    size="icon"
-                    className="h-10 w-8 rounded-l-lg rounded-r-none border border-r-0 shadow-md"
-                    style={{ borderColor }}
-                    aria-label="Buka komentar"
-                    onClick={() => onExpandedChange?.(true)}
-                >
-                    <MessageSquareText className="size-4" />
-                </Button>
-            </div>
-        );
-    }
 
     return (
         <div
             className={cn(
-                'pointer-events-none absolute inset-y-0 right-0 z-10 w-72 border-l bg-background/60 backdrop-blur-sm',
+                'pointer-events-none absolute inset-y-0 right-0 z-10 flex',
                 className,
             )}
-            style={{ borderColor }}
             aria-label="Page notes"
         >
-            <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                className="pointer-events-auto absolute top-1/2 -left-4 z-20 size-8 -translate-y-1/2 rounded-full border shadow-md"
-                style={{ borderColor }}
-                aria-label="Tutup komentar"
-                onClick={() => onExpandedChange?.(false)}
+            <div className="pointer-events-auto flex items-center">
+                <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className={cn(
+                        'size-8 border shadow-md transition-transform duration-300',
+                        expanded
+                            ? 'absolute top-1/2 -left-4 z-20 -translate-y-1/2 rounded-full'
+                            : 'h-10 w-8 rounded-l-lg rounded-r-none border-r-0',
+                    )}
+                    style={{ borderColor }}
+                    aria-label={expanded ? 'Tutup komentar' : 'Buka komentar'}
+                    onClick={() => onExpandedChange?.(!expanded)}
+                >
+                    {expanded ? (
+                        <ChevronRight className="size-4" />
+                    ) : (
+                        <MessageSquareText className="size-4" />
+                    )}
+                </Button>
+            </div>
+
+            <div
+                className={cn(
+                    'overflow-hidden border-l bg-background/60 backdrop-blur-sm transition-[width,opacity] duration-300 ease-in-out',
+                    expanded ? 'w-72 opacity-100' : 'w-0 opacity-0',
+                )}
+                style={{ borderColor: expanded ? borderColor : 'transparent' }}
             >
-                <ChevronRight className="size-4" />
-            </Button>
+                <div className="pointer-events-none relative h-full w-72">
+                    {expanded && pageNotes.length === 0 && !draftNote ? (
+                        <div className="pointer-events-auto flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
+                            <MessageSquareText className="size-5 text-muted-foreground" />
+                            <p className="text-xs text-muted-foreground">
+                                Belum ada komentar di halaman ini
+                            </p>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 gap-1 text-xs"
+                                onClick={() => onExpandedChange?.(false)}
+                            >
+                                <ChevronLeft className="size-3.5" />
+                                Sembunyikan
+                            </Button>
+                        </div>
+                    ) : null}
 
-            {pageNotes.length === 0 && !draftNote ? (
-                <div className="pointer-events-auto flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
-                    <MessageSquareText className="size-5 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">
-                        Belum ada komentar di halaman ini
-                    </p>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 gap-1 text-xs"
-                        onClick={() => onExpandedChange?.(false)}
-                    >
-                        <ChevronLeft className="size-3.5" />
-                        Sembunyikan
-                    </Button>
+                    {draftNote &&
+                    onDraftContentChange &&
+                    onSaveDraft &&
+                    onCancelDraft ? (
+                        <MarginNoteComposer
+                            user={user}
+                            content={draftContent}
+                            quotedText={draftNote.quotedText}
+                            anchorPercent={draftNote.anchorPercent}
+                            processing={processingNoteId === -1}
+                            theme={theme}
+                            onContentChange={onDraftContentChange}
+                            onSubmit={onSaveDraft}
+                            onCancel={onCancelDraft}
+                        />
+                    ) : null}
+
+                    {pageNotes.map((note) => (
+                        <MarginNoteCard
+                            key={note.id}
+                            note={note}
+                            user={user}
+                            isEditing={editingNoteId === note.id}
+                            isActive={activeNoteId === note.id}
+                            processing={processingNoteId === note.id}
+                            theme={theme}
+                            onClick={() => onNoteClick?.(note)}
+                            onMouseEnter={() => onNoteHover?.(note.id)}
+                            onMouseLeave={() => onNoteHover?.(null)}
+                            onEdit={() => onEditNote?.(note.id)}
+                            onSave={(content) => onSaveNote?.(note.id, content)}
+                            onCancelEdit={() => onCancelEditNote?.()}
+                            onDelete={() => onDeleteNote?.(note.id)}
+                        />
+                    ))}
                 </div>
-            ) : null}
-
-            {draftNote && onDraftContentChange && onSaveDraft && onCancelDraft ? (
-                <MarginNoteComposer
-                    user={user}
-                    content={draftContent}
-                    quotedText={draftNote.quotedText}
-                    anchorPercent={draftNote.anchorPercent}
-                    processing={processingNoteId === -1}
-                    theme={theme}
-                    onContentChange={onDraftContentChange}
-                    onSubmit={onSaveDraft}
-                    onCancel={onCancelDraft}
-                />
-            ) : null}
-
-            {pageNotes.map((note) => (
-                <MarginNoteCard
-                    key={note.id}
-                    note={note}
-                    user={user}
-                    isEditing={editingNoteId === note.id}
-                    isActive={activeNoteId === note.id}
-                    processing={processingNoteId === note.id}
-                    theme={theme}
-                    onClick={() => onNoteClick?.(note)}
-                    onMouseEnter={() => onNoteHover?.(note.id)}
-                    onMouseLeave={() => onNoteHover?.(null)}
-                    onEdit={() => onEditNote?.(note.id)}
-                    onSave={(content) => onSaveNote?.(note.id, content)}
-                    onCancelEdit={() => onCancelEditNote?.()}
-                    onDelete={() => onDeleteNote?.(note.id)}
-                />
-            ))}
+            </div>
         </div>
     );
 }

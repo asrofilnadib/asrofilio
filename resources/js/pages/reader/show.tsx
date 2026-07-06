@@ -25,21 +25,31 @@ import {
 } from '@/lib/pdf-outline';
 import {
     applyHighlightToSelection,
+    applyNoteQuoteFromSelection,
     applyQuotedTextMark,
+    DEFAULT_NOTE_DRAFT_COLOR,
+    DEFAULT_NOTE_QUOTE_COLOR,
     findPageRoot,
     getPdfTextSelection,
     parsePageFromCfi,
+    removeHighlightMarkByText,
     removeNoteQuoteMark,
     setNoteQuoteFocus,
+    updateHighlightMarkColor,
+    updateNoteQuoteMarkId,
     type PdfTextSelection,
 } from '@/lib/pdf-highlight';
 import { paths } from '@/lib/paths';
 import {
     createOptimisticHighlightId,
+    deleteBookmark,
+    deleteHighlight,
     deleteNote,
     removeHighlightMark,
     storeHighlight,
     storeNote,
+    updateBookmarkLabel,
+    updateHighlight,
     updateNote,
 } from '@/lib/reader-annotations';
 import {
@@ -309,6 +319,7 @@ function ReaderShow({
         page: number,
         quotedText?: string,
         noteId?: number,
+        color: string = DEFAULT_NOTE_QUOTE_COLOR,
     ) {
         if (!quotedText || !readerContainerRef.current) {
             return;
@@ -317,13 +328,12 @@ function ReaderShow({
         const pageRoot = findPageRoot(readerContainerRef.current, page);
 
         if (pageRoot) {
-            applyQuotedTextMark(pageRoot, quotedText, noteId);
+            applyQuotedTextMark(pageRoot, quotedText, noteId, color);
         }
     }
 
     function openDraftNote(selection?: PdfTextSelection | null) {
         closeSelectionPopover();
-        window.getSelection()?.removeAllRanges();
 
         const anchor = selection ?? lastPdfSelectionRef.current;
         const page =
@@ -334,15 +344,26 @@ function ReaderShow({
         setDraftNote({
             quotedText: anchor?.text,
             anchorPercent: anchor?.anchorPercent ?? 10,
-            cfiLocation:
-                anchor?.cfiStart ?? `page:${currentPage}`,
+            cfiLocation: anchor?.cfiStart ?? `page:${currentPage}`,
         });
         setDraftContent('');
         setEditingNoteId(null);
         setMarginNotesExpanded(true);
 
-        if (anchor?.text) {
-            applyNoteQuoteForPage(page, anchor.text, -1);
+        const appliedFromSelection = applyNoteQuoteFromSelection(
+            -1,
+            DEFAULT_NOTE_DRAFT_COLOR,
+        );
+
+        if (!appliedFromSelection && anchor?.text) {
+            requestAnimationFrame(() => {
+                applyNoteQuoteForPage(
+                    page,
+                    anchor.text,
+                    -1,
+                    DEFAULT_NOTE_DRAFT_COLOR,
+                );
+            });
         }
     }
 
@@ -373,14 +394,31 @@ function ReaderShow({
                 chapter_title: activeSection,
             });
 
-            if (readerContainerRef.current) {
-                removeNoteQuoteMark(readerContainerRef.current, -1);
-            }
-
             setNotes((previous) => [...previous, note]);
 
-            const page = parsePageFromCfi(note.cfi_location ?? '') ?? currentPage;
-            applyNoteQuoteForPage(page, note.quoted_text ?? undefined, note.id);
+            if (readerContainerRef.current) {
+                const updated = readerContainerRef.current.querySelector(
+                    `[data-note-id="-1"]`,
+                );
+
+                if (updated) {
+                    updateNoteQuoteMarkId(
+                        readerContainerRef.current,
+                        -1,
+                        note.id,
+                        DEFAULT_NOTE_QUOTE_COLOR,
+                    );
+                } else {
+                    const page =
+                        parsePageFromCfi(note.cfi_location ?? '') ??
+                        currentPage;
+                    applyNoteQuoteForPage(
+                        page,
+                        note.quoted_text ?? undefined,
+                        note.id,
+                    );
+                }
+            }
 
             cancelDraftNote();
             setActiveNoteId(note.id);
@@ -443,6 +481,87 @@ function ReaderShow({
         } catch {
             toast.error('Gagal menghapus komentar');
             setProcessingNoteId(null);
+        }
+    }
+
+    async function handleDeleteBookmark(bookmarkId: number) {
+        try {
+            await deleteBookmark(bookmarkId);
+            setBookmarks((previous) =>
+                previous.filter((item) => item.id !== bookmarkId),
+            );
+            toast.success('Bookmark dihapus');
+        } catch {
+            toast.error('Gagal menghapus bookmark');
+        }
+    }
+
+    async function handleSaveBookmarkLabel(
+        bookmark: ReaderBookmark,
+        label: string,
+    ) {
+        try {
+            const updated = await updateBookmarkLabel(userBook.id, {
+                cfi_location: bookmark.cfi_location,
+                label,
+                chapter_title: bookmark.chapter_title,
+            });
+
+            setBookmarks((previous) =>
+                previous.map((item) =>
+                    item.cfi_location === bookmark.cfi_location
+                        ? { ...item, label: updated.label ?? label }
+                        : item,
+                ),
+            );
+            toast.success('Bookmark diperbarui');
+        } catch {
+            toast.error('Gagal memperbarui bookmark');
+        }
+    }
+
+    async function handleDeleteHighlight(highlightId: number) {
+        const highlight = highlights.find((item) => item.id === highlightId);
+
+        try {
+            await deleteHighlight(highlightId);
+            setHighlights((previous) =>
+                previous.filter((item) => item.id !== highlightId),
+            );
+
+            if (readerContainerRef.current && highlight?.text) {
+                removeHighlightMarkByText(
+                    readerContainerRef.current,
+                    highlight.text,
+                );
+            }
+        } catch {
+            toast.error('Gagal menghapus highlight');
+        }
+    }
+
+    async function handleHighlightColorChange(
+        highlight: Highlight,
+        color: string,
+    ) {
+        try {
+            const updated = await updateHighlight(highlight.id, { color });
+
+            setHighlights((previous) =>
+                previous.map((item) =>
+                    item.id === highlight.id ? updated : item,
+                ),
+            );
+
+            if (readerContainerRef.current) {
+                updateHighlightMarkColor(
+                    readerContainerRef.current,
+                    highlight.text,
+                    color,
+                );
+            }
+        } catch {
+            toast.error('Gagal memperbarui highlight');
         }
     }
 
@@ -745,6 +864,10 @@ function ReaderShow({
                         onNoteDelete={handleDeleteNote}
                         onNoteHover={setHoveredNoteId}
                         activeNoteId={activeNoteId}
+                        onBookmarkDelete={handleDeleteBookmark}
+                        onBookmarkSaveLabel={handleSaveBookmarkLabel}
+                        onHighlightDelete={handleDeleteHighlight}
+                        onHighlightColorChange={handleHighlightColorChange}
                     />
                 )}
 

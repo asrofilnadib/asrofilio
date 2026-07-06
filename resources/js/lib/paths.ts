@@ -7,6 +7,7 @@ export const paths = {
     readerFile: (bookUuid: string) => `/read/${bookUuid}/file`,
     readerProgress: (bookUuid: string) => `/read/${bookUuid}/progress`,
     highlights: '/highlights',
+    highlight: (id: number | string) => `/highlights/${id}`,
     vocabulary: '/vocabulary',
     analytics: '/analytics',
     bookSearch: '/api/books/search',

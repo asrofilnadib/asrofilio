@@ -24,6 +24,10 @@ export type UpdateNotePayload = {
     content: string;
 };
 
+export type UpdateHighlightPayload = {
+    color: string;
+};
+
 function jsonHeaders(): HeadersInit {
     return {
         Accept: 'application/json',
@@ -97,6 +101,51 @@ export async function deleteNote(noteId: number): Promise<void> {
     await requestJson<{ ok: boolean }>(paths.note(noteId), {
         method: 'DELETE',
     });
+}
+
+export async function deleteHighlight(highlightId: number): Promise<void> {
+    await requestJson<{ ok: boolean }>(paths.highlight(highlightId), {
+        method: 'DELETE',
+    });
+}
+
+export async function updateHighlight(
+    highlightId: number,
+    payload: UpdateHighlightPayload,
+): Promise<Highlight> {
+    const data = await requestJson<{ highlight: Highlight }>(
+        paths.highlight(highlightId),
+        {
+            method: 'PUT',
+            body: JSON.stringify(payload),
+        },
+    );
+
+    return data.highlight;
+}
+
+export async function deleteBookmark(bookmarkId: number): Promise<void> {
+    await requestJson<{ ok: boolean }>(paths.bookmark(bookmarkId), {
+        method: 'DELETE',
+    });
+}
+
+export async function updateBookmarkLabel(
+    userBookId: number,
+    payload: {
+        cfi_location: string;
+        label: string;
+        chapter_title?: string | null;
+    },
+): Promise<{ id: number; label?: string | null; cfi_location: string }> {
+    const data = await requestJson<{
+        bookmark: { id: number; label?: string | null; cfi_location: string };
+    }>(paths.userBookBookmark(userBookId), {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    });
+
+    return data.bookmark;
 }
 
 export function removeHighlightMark(mark: HTMLElement | null): void {

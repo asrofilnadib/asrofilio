@@ -5,11 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreBookmarkRequest;
 use App\Models\Bookmark;
 use App\Models\UserBook;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 class BookmarkController extends Controller
 {
-    public function store(StoreBookmarkRequest $request, UserBook $userBook): RedirectResponse
+    public function store(StoreBookmarkRequest $request, UserBook $userBook): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $userBook);
 
@@ -17,7 +19,7 @@ class BookmarkController extends Controller
         $validated = $request->validated();
         $cfiLocation = $validated['cfi_location'];
 
-        Bookmark::query()->updateOrCreate(
+        $bookmark = Bookmark::query()->updateOrCreate(
             [
                 'user_id' => $user->id,
                 'book_id' => $userBook->book_id,
@@ -30,14 +32,22 @@ class BookmarkController extends Controller
             ],
         );
 
+        if ($request->wantsJson()) {
+            return response()->json(['bookmark' => $bookmark->fresh()]);
+        }
+
         return back()->with('success', 'Bookmark saved.');
     }
 
-    public function destroy(Bookmark $bookmark): RedirectResponse
+    public function destroy(Request $request, Bookmark $bookmark): JsonResponse|RedirectResponse
     {
         $this->authorize('delete', $bookmark);
 
         $bookmark->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return back()->with('success', 'Bookmark removed.');
     }

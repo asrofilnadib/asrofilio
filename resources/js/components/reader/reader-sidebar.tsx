@@ -6,8 +6,13 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { HIGHLIGHT_COLORS } from '@/lib/highlight-colors';
 import {
     readerBorderColor,
     readerForeground,
@@ -43,6 +48,13 @@ type ReaderSidebarProps = {
     onNoteDelete?: (noteId: number) => void;
     onNoteHover?: (noteId: number | null) => void;
     activeNoteId?: number | null;
+    onBookmarkDelete?: (bookmarkId: number) => void;
+    onBookmarkSaveLabel?: (
+        bookmark: ReaderBookmark,
+        label: string,
+    ) => void;
+    onHighlightDelete?: (highlightId: number) => void;
+    onHighlightColorChange?: (highlight: Highlight, color: string) => void;
     theme?: ReaderTheme;
     className?: string;
 };
@@ -122,12 +134,20 @@ function ReaderSidebar({
     onNoteDelete,
     onNoteHover,
     activeNoteId = null,
+    onBookmarkDelete,
+    onBookmarkSaveLabel,
+    onHighlightDelete,
+    onHighlightColorChange,
     theme = 'sepia',
     className,
 }: ReaderSidebarProps) {
     const [tab, setTab] = useState<'contents' | 'annotations'>('contents');
     const [annotationFilter, setAnnotationFilter] =
         useState<AnnotationFilter>('bookmarks');
+    const [editingBookmarkId, setEditingBookmarkId] = useState<number | null>(
+        null,
+    );
+    const [bookmarkLabelDraft, setBookmarkLabelDraft] = useState('');
     const foreground = readerForeground(theme);
     const muted = readerMutedForeground(theme);
     const borderColor = readerBorderColor(theme);
@@ -172,25 +192,122 @@ function ReaderSidebar({
 
             return (
                 <div className="space-y-1">
-                    {bookmarks.map((bookmark) => (
-                        <button
-                            key={bookmark.id}
-                            type="button"
-                            onClick={() => onBookmarkSelect?.(bookmark)}
-                            className="flex w-full items-start gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-black/5"
-                            style={{ color: muted }}
-                        >
-                            <Bookmark
-                                className="mt-0.5 size-3.5 shrink-0"
-                                style={{ color: muted }}
-                            />
-                            <span style={{ color: foreground }}>
-                                {bookmark.label ||
-                                    bookmark.chapter_title ||
-                                    bookmark.cfi_location}
-                            </span>
-                        </button>
-                    ))}
+                    {bookmarks.map((bookmark) => {
+                        const isEditing = editingBookmarkId === bookmark.id;
+
+                        return (
+                            <div
+                                key={bookmark.id}
+                                className="group flex items-start gap-1 rounded-md pr-1 transition-colors hover:bg-black/5"
+                            >
+                                {isEditing ? (
+                                    <div className="flex w-full flex-col gap-2 px-3 py-2">
+                                        <Input
+                                            value={bookmarkLabelDraft}
+                                            onChange={(event) =>
+                                                setBookmarkLabelDraft(
+                                                    event.target.value,
+                                                )
+                                            }
+                                            className="h-8 text-sm"
+                                            autoFocus
+                                        />
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-7"
+                                                onClick={() =>
+                                                    setEditingBookmarkId(null)
+                                                }
+                                            >
+                                                Batal
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                className="h-7"
+                                                onClick={() => {
+                                                    onBookmarkSaveLabel?.(
+                                                        bookmark,
+                                                        bookmarkLabelDraft.trim() ||
+                                                            bookmark.label ||
+                                                            'Bookmark',
+                                                    );
+                                                    setEditingBookmarkId(null);
+                                                }}
+                                            >
+                                                Simpan
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                onBookmarkSelect?.(bookmark)
+                                            }
+                                            className="flex min-w-0 flex-1 items-start gap-2 rounded-md px-3 py-2 text-left text-sm"
+                                        >
+                                            <Bookmark
+                                                className="mt-0.5 size-3.5 shrink-0"
+                                                style={{ color: muted }}
+                                            />
+                                            <span style={{ color: foreground }}>
+                                                {bookmark.label ||
+                                                    bookmark.chapter_title ||
+                                                    bookmark.cfi_location}
+                                            </span>
+                                        </button>
+
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="mt-1 size-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                                    onClick={(event) =>
+                                                        event.stopPropagation()
+                                                    }
+                                                >
+                                                    <MoreVertical className="size-3.5" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem
+                                                    onClick={() => {
+                                                        setEditingBookmarkId(
+                                                            bookmark.id,
+                                                        );
+                                                        setBookmarkLabelDraft(
+                                                            bookmark.label ||
+                                                                bookmark.chapter_title ||
+                                                                '',
+                                                        );
+                                                    }}
+                                                >
+                                                    Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="text-destructive focus:text-destructive"
+                                                    onClick={() =>
+                                                        onBookmarkDelete?.(
+                                                            bookmark.id,
+                                                        )
+                                                    }
+                                                >
+                                                    Hapus
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             );
         }
@@ -210,33 +327,96 @@ function ReaderSidebar({
             return (
                 <div className="space-y-1">
                     {highlights.map((highlight) => (
-                        <button
+                        <div
                             key={highlight.id}
-                            type="button"
-                            onClick={() => onHighlightSelect?.(highlight)}
-                            className="flex w-full items-start gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-black/5"
+                            className="group flex items-start gap-1 rounded-md pr-1 transition-colors hover:bg-black/5"
                         >
-                            <span
-                                className="mt-1.5 size-2.5 shrink-0 rounded-full"
-                                style={{ backgroundColor: highlight.color }}
-                            />
-                            <span className="min-w-0">
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    onHighlightSelect?.(highlight)
+                                }
+                                className="flex min-w-0 flex-1 items-start gap-2 rounded-md px-3 py-2 text-left text-sm"
+                            >
                                 <span
-                                    className="block line-clamp-2"
-                                    style={{ color: foreground }}
-                                >
-                                    &ldquo;{highlight.text}&rdquo;
+                                    className="mt-1.5 size-2.5 shrink-0 rounded-full"
+                                    style={{
+                                        backgroundColor: highlight.color,
+                                    }}
+                                />
+                                <span className="min-w-0">
+                                    <span
+                                        className="block line-clamp-2"
+                                        style={{ color: foreground }}
+                                    >
+                                        &ldquo;{highlight.text}&rdquo;
+                                    </span>
+                                    <span
+                                        className="mt-0.5 block text-xs"
+                                        style={{ color: muted }}
+                                    >
+                                        {pageLabelFromCfi(
+                                            highlight.cfi_start,
+                                        ) ??
+                                            highlight.chapter_title ??
+                                            'Highlight'}
+                                    </span>
                                 </span>
-                                <span
-                                    className="mt-0.5 block text-xs"
-                                    style={{ color: muted }}
-                                >
-                                    {pageLabelFromCfi(highlight.cfi_start) ??
-                                        highlight.chapter_title ??
-                                        'Highlight'}
-                                </span>
-                            </span>
-                        </button>
+                            </button>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="mt-1 size-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                        onClick={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                    >
+                                        <MoreVertical className="size-3.5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuSub>
+                                        <DropdownMenuSubTrigger>
+                                            Edit warna
+                                        </DropdownMenuSubTrigger>
+                                        <DropdownMenuSubContent>
+                                            {HIGHLIGHT_COLORS.map((color) => (
+                                                <DropdownMenuItem
+                                                    key={color.id}
+                                                    onClick={() =>
+                                                        onHighlightColorChange?.(
+                                                            highlight,
+                                                            color.value,
+                                                        )
+                                                    }
+                                                >
+                                                    <span
+                                                        className="mr-2 inline-block size-3 rounded-full"
+                                                        style={{
+                                                            backgroundColor:
+                                                                color.value,
+                                                        }}
+                                                    />
+                                                    {color.label}
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuSub>
+                                    <DropdownMenuItem
+                                        className="text-destructive focus:text-destructive"
+                                        onClick={() =>
+                                            onHighlightDelete?.(highlight.id)
+                                        }
+                                    >
+                                        Hapus
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     ))}
                 </div>
             );
