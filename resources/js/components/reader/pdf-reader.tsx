@@ -5,9 +5,9 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 import { Button } from '@/components/ui/button';
-import { applyStoredHighlights } from '@/lib/pdf-highlight';
+import { applyStoredHighlights, applyStoredNoteMarks } from '@/lib/pdf-highlight';
 import { readerBackground, readerMutedForeground } from '@/lib/reader-theme';
-import type { Highlight } from '@/types/book';
+import type { Highlight, Note } from '@/types/book';
 import type { PdfReaderSettings } from '@/types/reader';
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -22,6 +22,7 @@ type PdfReaderProps = {
     onNumPagesChange?: (total: number) => void;
     settings: PdfReaderSettings;
     highlights?: Highlight[];
+    notes?: Note[];
 };
 
 type PdfPageProps = {
@@ -30,6 +31,7 @@ type PdfPageProps = {
     scale: number;
     scaleMode: PdfReaderSettings['scaleMode'];
     highlights: Highlight[];
+    notes: Note[];
     onPageRendered?: (pageNumber: number, element: HTMLElement) => void;
 };
 
@@ -43,6 +45,7 @@ function PdfPage({
     scale,
     scaleMode,
     highlights,
+    notes,
     onPageRendered,
 }: PdfPageProps) {
     const pageRef = useRef<HTMLDivElement>(null);
@@ -50,9 +53,10 @@ function PdfPage({
     const handleTextLayerSuccess = useCallback(() => {
         if (pageRef.current) {
             applyStoredHighlights(pageRef.current, highlights, pageNumber);
+            applyStoredNoteMarks(pageRef.current, notes, pageNumber);
             onPageRendered?.(pageNumber, pageRef.current);
         }
-    }, [highlights, onPageRendered, pageNumber]);
+    }, [highlights, notes, onPageRendered, pageNumber]);
 
     return (
         <div
@@ -79,6 +83,7 @@ function LazyPdfPage({
     scale,
     scaleMode,
     highlights,
+    notes = [],
     onPageRendered,
     eager = false,
 }: LazyPageProps) {
@@ -126,6 +131,7 @@ function LazyPdfPage({
                     scale={scale}
                     scaleMode={scaleMode}
                     highlights={highlights}
+                    notes={notes}
                     onPageRendered={onPageRendered}
                 />
             ) : (
@@ -148,6 +154,7 @@ function PdfReader({
     onNumPagesChange,
     settings,
     highlights = [],
+    notes = [],
 }: PdfReaderProps) {
     const [numPages, setNumPages] = useState(0);
     const [currentPage, setCurrentPage] = useState(page);
@@ -280,6 +287,7 @@ function PdfReader({
         scale,
         scaleMode: settings.scaleMode,
         highlights,
+        notes,
     };
 
     return (

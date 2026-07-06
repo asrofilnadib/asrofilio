@@ -1,4 +1,4 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { NoteFormModal } from '@/components/modals/note-form-modal';
 import { VocabularyFormModal } from '@/components/modals/vocabulary-form-modal';
 import { EpubReader } from '@/components/reader/epub-reader';
-import { MarginNotes } from '@/components/reader/margin-notes';
+import { MarginNotes, type DraftNote } from '@/components/reader/margin-notes';
 import { PdfReader } from '@/components/reader/pdf-reader';
 import {
     ReaderSidebar,
@@ -25,11 +25,20 @@ import {
 } from '@/lib/pdf-outline';
 import {
     applyHighlightToSelection,
+    applyQuotedTextMark,
     getPdfTextSelection,
     parsePageFromCfi,
     type PdfTextSelection,
 } from '@/lib/pdf-highlight';
 import { paths } from '@/lib/paths';
+import {
+    createOptimisticHighlightId,
+    deleteNote,
+    removeHighlightMark,
+    storeHighlight,
+    storeNote,
+    updateNote,
+} from '@/lib/reader-annotations';
 import {
     flushReadingProgress,
     saveReadingProgress,
@@ -39,6 +48,7 @@ import {
     persistReaderSettings,
 } from '@/lib/reader-settings-storage';
 import type { BookChapter, Highlight, Note } from '@/types/book';
+import type { Auth } from '@/types/auth';
 import type { PdfReaderSettings, ReaderPageProps } from '@/types/reader';
 
 function ReaderShow({
@@ -53,6 +63,7 @@ function ReaderShow({
     initialCfi,
     initialPage,
 }: ReaderPageProps) {
+    const { auth } = usePage<{ auth: Auth }>().props;
     const isPdf = fileType === 'pdf';
     const readerContainerRef = useRef<HTMLDivElement>(null);
     const [chapters, setChapters] = useState<BookChapter[]>(initialChapters);
@@ -64,6 +75,13 @@ function ReaderShow({
         loadReaderSettings(),
     );
     const [noteOpen, setNoteOpen] = useState(false);
+    const [draftNote, setDraftNote] = useState<DraftNote | null>(null);
+    const [draftContent, setDraftContent] = useState('');
+    const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+    const [activeNoteId, setActiveNoteId] = useState<number | null>(null);
+    const [processingNoteId, setProcessingNoteId] = useState<number | null>(
+        null,
+    );
     const [vocabOpen, setVocabOpen] = useState(false);
     const [numPages, setNumPages] = useState(0);
     const [currentPage, setCurrentPage] = useState(initialPage ?? 1);
@@ -72,6 +90,7 @@ function ReaderShow({
     );
     const [pendingSelection, setPendingSelection] =
         useState<PdfTextSelection | null>(null);
+    const lastPdfSelectionRef = useRef<PdfTextSelection | null>(null);
     const [selectionPopover, setSelectionPopover] = useState<{
         open: boolean;
         x: number;
@@ -162,19 +181,35 @@ function ReaderShow({
                     return;
                 }
 
+                lastPdfSelectionRef.current = selection;
                 setPendingSelection(selection);
                 setSelectionPopover({
                     open: true,
-                    x: rect.left + rect.width / 2,
+                    x: rect.right,
                     y: rect.top,
                     step: 'action',
                 });
             });
         }
 
-        container.addEventListener('mouseup', handleMouseUp);
+        function handleSelectionChange() {
+            const selection = getPdfTextSelection(currentPage);
 
-        return () => container.removeEventListener('mouseup', handleMouseUp);
+            if (selection) {
+                lastPdfSelectionRef.current = selection;
+            }
+        }
+
+        container.addEventListener('mouseup', handleMouseUp);
+        document.addEventListener('selectionchange', handleSelectionChange);
+
+        return () => {
+            container.removeEventListener('mouseup', handleMouseUp);
+            document.removeEventListener(
+                'selectionchange',
+                handleSelectionChange,
+            );
+        };
     }, [currentPage, isPdf]);
 
     const progressPercent = useMemo(() => {
@@ -255,6 +290,115 @@ function ReaderShow({
         setPendingSelection(null);
     }
 
+    function openDraftNote(selection?: PdfTextSelection | null) {
+        closeSelectionPopover();
+        window.getSelection()?.removeAllRanges();
+
+        const anchor = selection ?? lastPdfSelectionRef.current;
+
+        setDraftNote({
+            quotedText: anchor?.text,
+            anchorPercent: anchor?.anchorPercent ?? 10,
+            cfiLocation:
+                anchor?.cfiStart ??
+                (isPdf ? `page:${currentPage}` : `page:${currentPage}`),
+        });
+        setDraftContent('');
+        setEditingNoteId(null);
+    }
+
+    function cancelDraftNote() {
+        setDraftNote(null);
+        setDraftContent('');
+        setProcessingNoteId(null);
+    }
+
+    function applyNoteQuoteMark(quotedText?: string) {
+        if (!quotedText || !readerContainerRef.current) {
+            return;
+        }
+
+        const pageRoot = readerContainerRef.current.querySelector(
+            `[data-page="${currentPage}"]`,
+        ) as HTMLElement | null;
+
+        if (pageRoot) {
+            applyQuotedTextMark(pageRoot, quotedText);
+        }
+    }
+
+    async function handleSaveDraftNote() {
+        if (!draftNote || !draftContent.trim() || !auth.user) {
+            return;
+        }
+
+        setProcessingNoteId(-1);
+
+        try {
+            const note = await storeNote({
+                book_id: book.id,
+                content: draftContent.trim(),
+                quoted_text: draftNote.quotedText,
+                anchor_percent: draftNote.anchorPercent,
+                cfi_location: draftNote.cfiLocation,
+                chapter_title: activeSection,
+            });
+
+            setNotes((previous) => [...previous, note]);
+            applyNoteQuoteMark(draftNote.quotedText);
+            cancelDraftNote();
+            setActiveNoteId(note.id);
+        } catch {
+            toast.error('Gagal menyimpan komentar');
+            setProcessingNoteId(null);
+        }
+    }
+
+    async function handleSaveNoteEdit(noteId: number, content: string) {
+        if (!content.trim()) {
+            return;
+        }
+
+        setProcessingNoteId(noteId);
+
+        try {
+            const note = await updateNote(noteId, { content: content.trim() });
+
+            setNotes((previous) =>
+                previous.map((item) => (item.id === noteId ? note : item)),
+            );
+            setEditingNoteId(null);
+            setProcessingNoteId(null);
+        } catch {
+            toast.error('Gagal memperbarui komentar');
+            setProcessingNoteId(null);
+        }
+    }
+
+    async function handleDeleteNote(noteId: number) {
+        setProcessingNoteId(noteId);
+
+        try {
+            await deleteNote(noteId);
+            setNotes((previous) =>
+                previous.filter((item) => item.id !== noteId),
+            );
+
+            if (activeNoteId === noteId) {
+                setActiveNoteId(null);
+            }
+
+            if (editingNoteId === noteId) {
+                setEditingNoteId(null);
+            }
+
+            setProcessingNoteId(null);
+        } catch {
+            toast.error('Gagal menghapus komentar');
+            setProcessingNoteId(null);
+        }
+    }
+
     function navigateToPage(page: number) {
         setCurrentPage(page);
         setLocation(page);
@@ -271,6 +415,8 @@ function ReaderShow({
         setLocation(page);
         savePdfProgress(page, total);
         closeSelectionPopover();
+        cancelDraftNote();
+        setEditingNoteId(null);
     }
 
     function handleChapterSelect(chapter: BookChapter) {
@@ -310,6 +456,7 @@ function ReaderShow({
 
         if (page) {
             navigateToPage(page);
+            setActiveNoteId(note.id);
         }
     }
 
@@ -359,27 +506,48 @@ function ReaderShow({
     }, [isPdf, navigatePage]);
 
     function saveHighlight(color: string, selection: PdfTextSelection) {
-        router.post(
-            paths.highlights,
-            {
-                book_id: book.id,
-                text: selection.text,
-                cfi_start: selection.cfiStart,
-                cfi_end: selection.cfiEnd,
-                color,
-                chapter_title: activeSection,
-            },
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    applyHighlightToSelection(color);
-                    toast.success('Highlight saved');
-                    closeSelectionPopover();
-                    router.reload({ only: ['highlights'] });
-                },
-                onError: () => toast.error('Could not save highlight'),
-            },
-        );
+        const optimisticId = createOptimisticHighlightId();
+        const mark = applyHighlightToSelection(color);
+
+        closeSelectionPopover();
+
+        const optimisticHighlight: Highlight = {
+            id: optimisticId,
+            user_id: auth.user?.id ?? 0,
+            book_id: book.id,
+            user_book_id: userBook.id,
+            text: selection.text,
+            cfi_start: selection.cfiStart,
+            cfi_end: selection.cfiEnd,
+            color,
+            chapter_title: activeSection,
+            created_at: new Date().toISOString(),
+        };
+
+        setHighlights((previous) => [...previous, optimisticHighlight]);
+
+        storeHighlight({
+            book_id: book.id,
+            text: selection.text,
+            cfi_start: selection.cfiStart,
+            cfi_end: selection.cfiEnd,
+            color,
+            chapter_title: activeSection,
+        })
+            .then((savedHighlight) => {
+                setHighlights((previous) =>
+                    previous.map((item) =>
+                        item.id === optimisticId ? savedHighlight : item,
+                    ),
+                );
+            })
+            .catch(() => {
+                removeHighlightMark(mark);
+                setHighlights((previous) =>
+                    previous.filter((item) => item.id !== optimisticId),
+                );
+                toast.error('Gagal menyimpan highlight');
+            });
     }
 
     function handleToolbarHighlight() {
@@ -389,7 +557,9 @@ function ReaderShow({
             return;
         }
 
-        const selection = getPdfTextSelection(currentPage);
+        const selection =
+            getPdfTextSelection(currentPage) ??
+            lastPdfSelectionRef.current;
 
         if (!selection) {
             toast.info('Select text in the page first');
@@ -397,11 +567,14 @@ function ReaderShow({
             return;
         }
 
+        const range = window.getSelection()?.getRangeAt(0);
+        const rect = range?.getBoundingClientRect();
+
         setPendingSelection(selection);
         setSelectionPopover({
             open: true,
-            x: window.innerWidth / 2,
-            y: window.innerHeight / 2,
+            x: rect?.right ?? window.innerWidth / 2,
+            y: rect?.top ?? window.innerHeight / 2,
             step: 'color',
         });
     }
@@ -413,14 +586,11 @@ function ReaderShow({
             return;
         }
 
-        const selection = getPdfTextSelection(currentPage);
+        const selection =
+            getPdfTextSelection(currentPage) ??
+            lastPdfSelectionRef.current;
 
-        if (selection) {
-            setPendingSelection(selection);
-        }
-
-        closeSelectionPopover();
-        setNoteOpen(true);
+        openDraftNote(selection);
     }
 
     function handleToggleBookmark() {
@@ -533,12 +703,33 @@ function ReaderShow({
                                 onNumPagesChange={setNumPages}
                                 settings={settings}
                                 highlights={highlights}
-                            />
-                            <MarginNotes
                                 notes={notes}
-                                currentPage={currentPage}
-                                theme={settings.theme}
                             />
+                            {auth.user ? (
+                                <MarginNotes
+                                    notes={notes}
+                                    currentPage={currentPage}
+                                    draftNote={draftNote}
+                                    draftContent={draftContent}
+                                    editingNoteId={editingNoteId}
+                                    activeNoteId={activeNoteId}
+                                    processingNoteId={processingNoteId}
+                                    user={auth.user}
+                                    theme={settings.theme}
+                                    onDraftContentChange={setDraftContent}
+                                    onSaveDraft={handleSaveDraftNote}
+                                    onCancelDraft={cancelDraftNote}
+                                    onNoteClick={(note) =>
+                                        setActiveNoteId(note.id)
+                                    }
+                                    onEditNote={setEditingNoteId}
+                                    onSaveNote={handleSaveNoteEdit}
+                                    onCancelEditNote={() =>
+                                        setEditingNoteId(null)
+                                    }
+                                    onDeleteNote={handleDeleteNote}
+                                />
+                            ) : null}
                         </>
                     )}
                 </div>
@@ -556,8 +747,11 @@ function ReaderShow({
                     }))
                 }
                 onChooseNote={() => {
-                    closeSelectionPopover();
-                    setNoteOpen(true);
+                    if (!pendingSelection) {
+                        return;
+                    }
+
+                    openDraftNote(pendingSelection);
                 }}
                 onColorSelect={(color) => {
                     if (!pendingSelection) {
@@ -569,26 +763,28 @@ function ReaderShow({
                 onClose={closeSelectionPopover}
             />
 
-            <NoteFormModal
-                open={noteOpen}
-                onOpenChange={(open) => {
-                    setNoteOpen(open);
+            {!isPdf ? (
+                <NoteFormModal
+                    open={noteOpen}
+                    onOpenChange={(open) => {
+                        setNoteOpen(open);
 
-                    if (!open) {
+                        if (!open) {
+                            setPendingSelection(null);
+                        }
+                    }}
+                    bookId={book.id}
+                    userBookId={userBook.id}
+                    cfiLocation={noteCfiLocation}
+                    chapterTitle={activeSection ?? undefined}
+                    quotedText={pendingSelection?.text}
+                    anchorPercent={pendingSelection?.anchorPercent}
+                    onSuccess={() => {
                         setPendingSelection(null);
-                    }
-                }}
-                bookId={book.id}
-                userBookId={userBook.id}
-                cfiLocation={noteCfiLocation}
-                chapterTitle={activeSection ?? undefined}
-                quotedText={pendingSelection?.text}
-                anchorPercent={pendingSelection?.anchorPercent}
-                onSuccess={() => {
-                    setPendingSelection(null);
-                    router.reload({ only: ['notes'] });
-                }}
-            />
+                        router.reload({ only: ['notes'] });
+                    }}
+                />
+            ) : null}
 
             <VocabularyFormModal
                 open={vocabOpen}

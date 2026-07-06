@@ -70,7 +70,7 @@ function SelectionPopover({
             style={{
                 top: y,
                 left: x,
-                transform: 'translate(-50%, -110%)',
+                transform: 'translate(0, -110%)',
             }}
         >
             {step === 'action' ? (

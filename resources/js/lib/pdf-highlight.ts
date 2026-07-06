@@ -2,6 +2,8 @@ import type { Highlight } from '@/types/book';
 
 import { DEFAULT_HIGHLIGHT_COLOR } from '@/lib/highlight-colors';
 
+export const DEFAULT_NOTE_QUOTE_COLOR = '#cce5ff';
+
 export type PdfSelectionRect = {
     top: number;
     left: number;
@@ -41,6 +43,24 @@ export function parsePageFromCfi(cfi: string): number | null {
 
 function resolvePageContainer(textLayer: Element): HTMLElement | null {
     return textLayer.closest('[data-page]') as HTMLElement | null;
+}
+
+function resolveTextLayerFromRange(range: Range): Element | null {
+    const container = range.commonAncestorContainer;
+
+    if (container.nodeType === Node.TEXT_NODE) {
+        return container.parentElement?.closest('.textLayer') ?? null;
+    }
+
+    if (container instanceof Element) {
+        if (container.classList.contains('textLayer')) {
+            return container;
+        }
+
+        return container.closest('.textLayer');
+    }
+
+    return null;
 }
 
 function buildSelectionMetrics(
@@ -84,9 +104,7 @@ export function getPdfTextSelection(
     }
 
     const range = selection.getRangeAt(0);
-    const textLayer = (
-        range.commonAncestorContainer as Node
-    ).parentElement?.closest('.textLayer');
+    const textLayer = resolveTextLayerFromRange(range);
 
     if (!textLayer) {
         return null;
@@ -121,11 +139,11 @@ export function getPdfTextSelection(
 
 export function applyHighlightToSelection(
     color: string = DEFAULT_HIGHLIGHT_COLOR,
-): boolean {
+): HTMLElement | null {
     const selection = window.getSelection();
 
     if (!selection || selection.isCollapsed) {
-        return false;
+        return null;
     }
 
     const range = selection.getRangeAt(0);
@@ -144,15 +162,59 @@ export function applyHighlightToSelection(
 
     selection.removeAllRanges();
 
-    return true;
+    return mark;
 }
 
-function highlightTextInLayer(
+export function applyQuotedTextMark(
+    pageRoot: HTMLElement,
+    quotedText: string,
+    color: string = DEFAULT_NOTE_QUOTE_COLOR,
+): void {
+    const textLayer = pageRoot.querySelector('.textLayer');
+
+    if (!textLayer || !quotedText.trim()) {
+        return;
+    }
+
+    markTextInLayer(
+        textLayer as HTMLElement,
+        quotedText,
+        color,
+        'pdf-note-quote',
+        'note-quote-text',
+    );
+}
+
+export function applyStoredNoteMarks(
+    pageRoot: HTMLElement,
+    notes: Array<{ quoted_text?: string | null; cfi_location?: string | null }>,
+    page: number,
+): void {
+    const pageNotes = notes.filter(
+        (note) => parsePageFromCfi(note.cfi_location ?? '') === page,
+    );
+
+    for (const note of pageNotes) {
+        if (!note.quoted_text) {
+            continue;
+        }
+
+        applyQuotedTextMark(pageRoot, note.quoted_text);
+    }
+}
+
+function markTextInLayer(
     layer: HTMLElement,
     searchText: string,
     color: string,
+    className: string,
+    dataAttribute?: string,
 ): void {
-    if (layer.querySelector(`[data-highlight-text="${CSS.escape(searchText)}"]`)) {
+    const selector = dataAttribute
+        ? `[data-${dataAttribute}="${CSS.escape(searchText)}"]`
+        : null;
+
+    if (selector && layer.querySelector(selector)) {
         return;
     }
 
@@ -209,8 +271,11 @@ function highlightTextInLayer(
 
     const mark = document.createElement('mark');
     mark.style.backgroundColor = color;
-    mark.className = 'pdf-highlight';
-    mark.setAttribute('data-highlight-text', searchText);
+    mark.className = className;
+
+    if (dataAttribute) {
+        mark.setAttribute(`data-${dataAttribute}`, searchText);
+    }
 
     try {
         range.surroundContents(mark);
@@ -219,6 +284,14 @@ function highlightTextInLayer(
         mark.appendChild(fragment);
         range.insertNode(mark);
     }
+}
+
+function highlightTextInLayer(
+    layer: HTMLElement,
+    searchText: string,
+    color: string,
+): void {
+    markTextInLayer(layer, searchText, color, 'pdf-highlight', 'highlight-text');
 }
 
 export function applyStoredHighlights(

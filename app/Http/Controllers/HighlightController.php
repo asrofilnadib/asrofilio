@@ -6,6 +6,7 @@ use App\Http\Requests\StoreHighlightRequest;
 use App\Http\Requests\UpdateHighlightRequest;
 use App\Models\Highlight;
 use App\Models\UserBook;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -31,7 +32,7 @@ class HighlightController extends Controller
         ]);
     }
 
-    public function store(StoreHighlightRequest $request): RedirectResponse
+    public function store(StoreHighlightRequest $request): JsonResponse|RedirectResponse
     {
         $this->authorize('create', Highlight::class);
 
@@ -41,11 +42,15 @@ class HighlightController extends Controller
             ->where('book_id', $request->integer('book_id'))
             ->first();
 
-        Highlight::create([
+        $highlight = Highlight::create([
             ...$request->validated(),
             'user_id' => $user->id,
             'user_book_id' => $userBook?->id,
         ]);
+
+        if ($request->wantsJson()) {
+            return response()->json(['highlight' => $highlight]);
+        }
 
         return back()->with('success', 'Highlight saved.');
     }

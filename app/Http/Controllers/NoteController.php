@@ -6,6 +6,7 @@ use App\Http\Requests\StoreNoteRequest;
 use App\Http\Requests\UpdateNoteRequest;
 use App\Models\Note;
 use App\Models\UserBook;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -31,7 +32,7 @@ class NoteController extends Controller
         ]);
     }
 
-    public function store(StoreNoteRequest $request): RedirectResponse
+    public function store(StoreNoteRequest $request): JsonResponse|RedirectResponse
     {
         $this->authorize('create', Note::class);
 
@@ -41,29 +42,41 @@ class NoteController extends Controller
             ->where('book_id', $request->integer('book_id'))
             ->first();
 
-        Note::create([
+        $note = Note::create([
             ...$request->validated(),
             'user_id' => $user->id,
             'user_book_id' => $userBook?->id,
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json(['note' => $note]);
+        }
+
         return back()->with('success', 'Note saved.');
     }
 
-    public function update(UpdateNoteRequest $request, Note $note): RedirectResponse
+    public function update(UpdateNoteRequest $request, Note $note): JsonResponse|RedirectResponse
     {
         $this->authorize('update', $note);
 
         $note->update($request->validated());
 
+        if ($request->wantsJson()) {
+            return response()->json(['note' => $note->fresh()]);
+        }
+
         return back()->with('success', 'Note updated.');
     }
 
-    public function destroy(Note $note): RedirectResponse
+    public function destroy(Request $request, Note $note): JsonResponse|RedirectResponse
     {
         $this->authorize('delete', $note);
 
         $note->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return back()->with('success', 'Note deleted.');
     }
