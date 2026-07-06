@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { FilePond, registerPlugin } from 'react-filepond';
 import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type';
 import type { FilePondFile, FilePondOptions } from 'filepond';
@@ -6,6 +6,7 @@ import type { FilePondFile, FilePondOptions } from 'filepond';
 import { Label } from '@/components/ui/label';
 import { getCsrfToken } from '@/lib/csrf';
 import { paths } from '@/lib/paths';
+import { parseStagedUploadToken } from '@/lib/staged-upload';
 
 import 'filepond/dist/filepond.min.css';
 
@@ -23,21 +24,6 @@ const uploadHeaders = () => ({
     Accept: 'text/plain',
     'X-Requested-With': 'XMLHttpRequest',
 });
-
-const bookFileServer: FilePondOptions['server'] = {
-    process: {
-        url: paths.admin.bookUploadProcess,
-        method: 'POST',
-        headers: uploadHeaders(),
-        onload: (response) => response,
-        onerror: (response) => response,
-    },
-    revert: {
-        url: paths.admin.bookUploadRevert,
-        method: 'DELETE',
-        headers: uploadHeaders(),
-    },
-};
 
 type BookFilePondUploadProps = {
     inputId?: string;
@@ -57,6 +43,106 @@ function BookFilePondUpload({
     onUploadingChange,
 }: BookFilePondUploadProps) {
     const [files, setFiles] = useState<FilePondFile[]>([]);
+    const onStagedUploadChangeRef = useRef(onStagedUploadChange);
+    const onUploadingChangeRef = useRef(onUploadingChange);
+
+    onStagedUploadChangeRef.current = onStagedUploadChange;
+    onUploadingChangeRef.current = onUploadingChange;
+
+    const server = useMemo((): FilePondOptions['server'] => {
+        return {
+            process: (
+                _fieldName,
+                file,
+                _metadata,
+                load,
+                processError,
+                progress,
+                abort,
+            ) => {
+                const xhr = new XMLHttpRequest();
+                const formData = new FormData();
+                formData.append('file', file, file.name);
+
+                xhr.open('POST', paths.admin.bookUploadProcess);
+
+                for (const [header, value] of Object.entries(uploadHeaders())) {
+                    xhr.setRequestHeader(header, value);
+                }
+
+                xhr.upload.onprogress = (event) => {
+                    progress(event.lengthComputable, event.loaded, event.total);
+                };
+
+                xhr.onload = () => {
+                    onUploadingChangeRef.current?.(false);
+
+                    if (xhr.status < 200 || xhr.status >= 300) {
+                        onStagedUploadChangeRef.current?.(null);
+                        processError(
+                            xhr.responseText?.trim() || 'Upload failed',
+                        );
+
+                        return;
+                    }
+
+                    const token = parseStagedUploadToken(xhr.responseText);
+
+                    if (token === null) {
+                        onStagedUploadChangeRef.current?.(null);
+                        processError('Invalid upload response from server');
+
+                        return;
+                    }
+
+                    load(token);
+                    onStagedUploadChangeRef.current?.(token);
+                };
+
+                xhr.onerror = () => {
+                    onUploadingChangeRef.current?.(false);
+                    onStagedUploadChangeRef.current?.(null);
+                    processError('Upload failed');
+                };
+
+                xhr.onabort = () => {
+                    onUploadingChangeRef.current?.(false);
+                    onStagedUploadChangeRef.current?.(null);
+                    abort();
+                };
+
+                onUploadingChangeRef.current?.(true);
+                xhr.send(formData);
+
+                return {
+                    abort: () => xhr.abort(),
+                };
+            },
+            revert: (uniqueId, load, revertError) => {
+                const xhr = new XMLHttpRequest();
+
+                xhr.open('DELETE', paths.admin.bookUploadRevert);
+
+                for (const [header, value] of Object.entries(uploadHeaders())) {
+                    xhr.setRequestHeader(header, value);
+                }
+
+                xhr.onload = () => {
+                    if (xhr.status < 200 || xhr.status >= 300) {
+                        revertError('Could not remove uploaded file');
+
+                        return;
+                    }
+
+                    load();
+                    onStagedUploadChangeRef.current?.(null);
+                };
+
+                xhr.onerror = () => revertError('Could not remove uploaded file');
+                xhr.send(uniqueId);
+            },
+        };
+    }, []);
 
     const existingFileLabel = useMemo(() => {
         if (existingFilePath) {
@@ -70,7 +156,7 @@ function BookFilePondUpload({
         setFiles(fileItems);
 
         if (fileItems.length === 0) {
-            onStagedUploadChange?.(null);
+            onStagedUploadChangeRef.current?.(null);
         }
     }
 
@@ -92,10 +178,9 @@ function BookFilePondUpload({
             )}
             <FilePond
                 id={inputId}
-                name="file"
                 files={files}
                 onupdatefiles={handleUpdateFiles}
-                server={bookFileServer}
+                server={server}
                 allowMultiple={false}
                 instantUpload
                 maxFiles={1}
@@ -110,23 +195,7 @@ function BookFilePondUpload({
                 labelTapToUndo="tap to undo"
                 labelFileTypeNotAllowed="Only PDF and EPUB files are allowed"
                 fileValidateTypeLabelExpectedTypes="Expects PDF or EPUB"
-                onprocessfilestart={() => onUploadingChange?.(true)}
-                onprocessfile={(processError, file) => {
-                    onUploadingChange?.(false);
-
-                    if (!processError && file.serverId) {
-                        onStagedUploadChange?.(file.serverId);
-                    }
-                }}
-                onprocessfileabort={() => {
-                    onUploadingChange?.(false);
-                    onStagedUploadChange?.(null);
-                }}
-                onerror={() => {
-                    onUploadingChange?.(false);
-                    onStagedUploadChange?.(null);
-                }}
-                onremovefile={() => onStagedUploadChange?.(null)}
+                onremovefile={() => onStagedUploadChangeRef.current?.(null)}
             />
             {error ? (
                 <p className="text-sm text-destructive">{error}</p>

@@ -2,13 +2,24 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Rules\ValidBookFile;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreBookRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return $this->user()?->isAdmin() ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('staged_upload_id')) {
+            $this->merge([
+                'staged_upload_id' => trim($this->string('staged_upload_id')->toString()) ?: null,
+            ]);
+        }
     }
 
     /**
@@ -32,7 +43,13 @@ class StoreBookRequest extends FormRequest
             'genre_ids.*' => ['integer', 'exists:genres,id'],
             'tag_ids' => ['nullable', 'array'],
             'tag_ids.*' => ['integer', 'exists:tags,id'],
-            'file' => ['nullable', 'file', 'mimes:epub,pdf', 'max:51200'],
+            'file' => [
+                Rule::excludeIf(fn () => ! $this->hasFile('file')),
+                'nullable',
+                'file',
+                'max:51200',
+                new ValidBookFile,
+            ],
             'staged_upload_id' => ['nullable', 'uuid'],
             'cover' => ['nullable', 'image', 'max:5120'],
         ];

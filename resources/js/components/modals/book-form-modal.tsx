@@ -101,12 +101,6 @@ function BookFormModal({
                     key={book?.id ?? 'new'}
                     action={action}
                     method={method}
-                    transform={(data) => ({
-                        ...data,
-                        ...(stagedUploadId
-                            ? { staged_upload_id: stagedUploadId }
-                            : {}),
-                    })}
                     resetOnSuccess={!isEditing}
                     onSuccess={() => {
                         toast.success(
@@ -140,6 +134,13 @@ function BookFormModal({
                                     value={values.cover_url}
                                 />
                             )}
+                            {stagedUploadId ? (
+                                <input
+                                    type="hidden"
+                                    name="staged_upload_id"
+                                    value={stagedUploadId}
+                                />
+                            ) : null}
 
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2 sm:col-span-2">
