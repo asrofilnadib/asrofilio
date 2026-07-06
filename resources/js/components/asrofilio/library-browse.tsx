@@ -1,14 +1,11 @@
 import { router, usePage } from '@inertiajs/react';
-import { ArrowDownAZ, BookOpen, Plus, Search } from 'lucide-react';
-import type { FormEvent, ReactNode } from 'react';
-import { useState } from 'react';
+import { ArrowDownAZ, BookOpen, Loader2, Plus, Search } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { LibraryBookCard } from '@/components/asrofilio/library-book-card';
-import {
-    LibrarySidebar,
-    type LibraryFilters,
-    type LibrarySort,
-} from '@/components/asrofilio/library-sidebar';
+import type { LibraryFilters, LibrarySort } from '@/components/asrofilio/library-sidebar';
+import { LibrarySidebar } from '@/components/asrofilio/library-sidebar';
 import { StatusFilters } from '@/components/asrofilio/status-filters';
 import { AddBookModal } from '@/components/modals/add-book-modal';
 import { Button } from '@/components/ui/button';
@@ -20,18 +17,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useLibraryInfiniteScroll } from '@/hooks/use-library-infinite-scroll';
 import { useI18n } from '@/lib/i18n';
 import { buildLibraryQuery } from '@/lib/library-query';
 import { paths } from '@/lib/paths';
-import { useLibraryInfiniteScroll } from '@/hooks/use-library-infinite-scroll';
 import type { Auth } from '@/types/auth';
-import type {
-    Book,
-    Genre,
-    Paginated,
-    ReadingStatus,
-    UserBook,
-} from '@/types/book';
+import type { Book, Genre, Paginated, UserBook } from '@/types/book';
 
 type LibraryBrowseProps = {
     basePath?: string;
@@ -85,7 +76,22 @@ function LibraryBrowse({
     const { auth } = usePage<{ auth: Auth }>().props;
     const { t } = useI18n();
     const [addBookOpen, setAddBookOpen] = useState(false);
+    const searchContextKey = [
+        filters.scope,
+        filters.genres?.join(',') ?? '',
+        filters.status ?? '',
+        filters.sort ?? '',
+    ].join('|');
+    const [searchContext, setSearchContext] = useState(searchContextKey);
     const [search, setSearch] = useState(filters.search ?? '');
+    const [searching, setSearching] = useState(false);
+    const filtersRef = useRef(filters);
+
+    if (searchContext !== searchContextKey) {
+        setSearchContext(searchContextKey);
+        setSearch(filters.search ?? '');
+    }
+
     const activeStatus = filters.status ?? 'all';
     const activeSort = filters.sort ?? 'newest';
     const { items, loading, hasMore, sentinelRef } = useLibraryInfiniteScroll({
@@ -94,14 +100,39 @@ function LibraryBrowse({
         books,
     });
 
-    function handleSearch(e: FormEvent) {
-        e.preventDefault();
-        router.get(
-            basePath,
-            buildLibraryQuery(filters, { search: search || null }),
-            { preserveState: true },
-        );
-    }
+    useEffect(() => {
+        filtersRef.current = filters;
+    }, [filters]);
+
+    useEffect(() => {
+        const query = search.trim();
+        const serverQuery = (filters.search ?? '').trim();
+
+        if (query === serverQuery) {
+            return;
+        }
+
+        const timeout = window.setTimeout(() => {
+            router.cancelAll();
+            setSearching(true);
+
+            router.get(
+                basePath,
+                buildLibraryQuery(filtersRef.current, {
+                    search: query || null,
+                }),
+                {
+                    only: ['books', 'filters'],
+                    preserveState: true,
+                    preserveScroll: true,
+                    replace: true,
+                    onFinish: () => setSearching(false),
+                },
+            );
+        }, 300);
+
+        return () => window.clearTimeout(timeout);
+    }, [search, basePath, filters.search]);
 
     function handleSortChange(value: LibrarySort) {
         router.get(
@@ -134,10 +165,7 @@ function LibraryBrowse({
                     {header}
 
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <form
-                            onSubmit={handleSearch}
-                            className="relative min-w-0 flex-1"
-                        >
+                        <div className="relative min-w-0 flex-1">
                             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 value={search}
@@ -147,9 +175,13 @@ function LibraryBrowse({
                                         ? t('library_search_public')
                                         : t('library_search_mine')
                                 }
-                                className="h-11 rounded-full border-border/70 bg-card pl-10 shadow-sm"
+                                className={`h-11 rounded-full border-border/70 bg-card pl-10 shadow-sm${searching ? ' pr-10' : ''}`}
+                                aria-busy={searching}
                             />
-                        </form>
+                            {searching ? (
+                                <Loader2 className="absolute top-1/2 right-3 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                            ) : null}
+                        </div>
 
                         <Select
                             value={activeSort}

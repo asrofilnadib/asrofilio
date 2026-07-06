@@ -164,6 +164,31 @@ test('public library includes featured books for carousel', function () {
         );
 });
 
+test('library can search books by title', function () {
+    $this->seed(GenreSeeder::class);
+
+    $alchemist = Book::factory()->create([
+        'is_public' => true,
+        'title' => 'The Alchemist',
+        'author' => 'Paulo Coelho',
+    ]);
+    $other = Book::factory()->create([
+        'is_public' => true,
+        'title' => 'Other Book',
+    ]);
+    attachFictionGenre($alchemist);
+    attachFictionGenre($other);
+
+    $this->get(route('library.index', ['search' => 'alchemist']))
+        ->assertOk()
+        ->assertInertia(fn ($page) => $page
+            ->component('library/index')
+            ->has('books.data', 1)
+            ->where('books.data.0.title', 'The Alchemist')
+            ->where('filters.search', 'alchemist')
+        );
+});
+
 test('user can switch locale', function () {
     $user = User::factory()->create();
 
