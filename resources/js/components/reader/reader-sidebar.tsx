@@ -1,6 +1,13 @@
-import { Bookmark, StickyNote } from 'lucide-react';
+import { Bookmark, MoreVertical, StickyNote } from 'lucide-react';
 import { useState } from 'react';
 
+import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
     readerBorderColor,
     readerForeground,
@@ -32,6 +39,10 @@ type ReaderSidebarProps = {
     onBookmarkSelect?: (bookmark: ReaderBookmark) => void;
     onHighlightSelect?: (highlight: Highlight) => void;
     onNoteSelect?: (note: Note) => void;
+    onNoteEdit?: (note: Note) => void;
+    onNoteDelete?: (noteId: number) => void;
+    onNoteHover?: (noteId: number | null) => void;
+    activeNoteId?: number | null;
     theme?: ReaderTheme;
     className?: string;
 };
@@ -107,6 +118,10 @@ function ReaderSidebar({
     onBookmarkSelect,
     onHighlightSelect,
     onNoteSelect,
+    onNoteEdit,
+    onNoteDelete,
+    onNoteHover,
+    activeNoteId = null,
     theme = 'sepia',
     className,
 }: ReaderSidebarProps) {
@@ -240,35 +255,85 @@ function ReaderSidebar({
 
         return (
             <div className="space-y-1">
-                {notes.map((note) => (
-                    <button
-                        key={note.id}
-                        type="button"
-                        onClick={() => onNoteSelect?.(note)}
-                        className="flex w-full items-start gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-black/5"
-                    >
-                        <StickyNote
-                            className="mt-0.5 size-3.5 shrink-0"
-                            style={{ color: muted }}
-                        />
-                        <span className="min-w-0">
-                            <span
-                                className="block line-clamp-2"
-                                style={{ color: foreground }}
+                {notes.map((note) => {
+                    const isActive = activeNoteId === note.id;
+
+                    return (
+                        <div
+                            key={note.id}
+                            className={cn(
+                                'group flex items-start gap-1 rounded-md pr-1 transition-colors',
+                                isActive ? 'bg-primary/10' : 'hover:bg-black/5',
+                            )}
+                            onMouseEnter={() => onNoteHover?.(note.id)}
+                            onMouseLeave={() => onNoteHover?.(null)}
+                        >
+                            <button
+                                type="button"
+                                onClick={() => onNoteSelect?.(note)}
+                                className="flex min-w-0 flex-1 items-start gap-2 rounded-md px-3 py-2 text-left text-sm"
                             >
-                                {note.content}
-                            </span>
-                            <span
-                                className="mt-0.5 block text-xs"
-                                style={{ color: muted }}
-                            >
-                                {pageLabelFromCfi(note.cfi_location) ??
-                                    note.chapter_title ??
-                                    'Note'}
-                            </span>
-                        </span>
-                    </button>
-                ))}
+                                <StickyNote
+                                    className="mt-0.5 size-3.5 shrink-0"
+                                    style={{ color: muted }}
+                                />
+                                <span className="min-w-0">
+                                    <span
+                                        className="block line-clamp-2"
+                                        style={{ color: foreground }}
+                                    >
+                                        {note.content}
+                                    </span>
+                                    <span
+                                        className="mt-0.5 block text-xs"
+                                        style={{ color: muted }}
+                                    >
+                                        {pageLabelFromCfi(note.cfi_location) ??
+                                            note.chapter_title ??
+                                            'Note'}
+                                    </span>
+                                    {note.quoted_text ? (
+                                        <span
+                                            className="mt-1 block line-clamp-1 text-xs italic"
+                                            style={{ color: muted }}
+                                        >
+                                            &ldquo;{note.quoted_text}&rdquo;
+                                        </span>
+                                    ) : null}
+                                </span>
+                            </button>
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="mt-1 size-7 shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+                                        onClick={(event) =>
+                                            event.stopPropagation()
+                                        }
+                                    >
+                                        <MoreVertical className="size-3.5" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                        onClick={() => onNoteEdit?.(note)}
+                                    >
+                                        Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        className="text-destructive focus:text-destructive"
+                                        onClick={() => onNoteDelete?.(note.id)}
+                                    >
+                                        Hapus
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    );
+                })}
             </div>
         );
     }

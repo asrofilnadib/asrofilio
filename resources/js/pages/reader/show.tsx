@@ -26,8 +26,11 @@ import {
 import {
     applyHighlightToSelection,
     applyQuotedTextMark,
+    findPageRoot,
     getPdfTextSelection,
     parsePageFromCfi,
+    removeNoteQuoteMark,
+    setNoteQuoteFocus,
     type PdfTextSelection,
 } from '@/lib/pdf-highlight';
 import { paths } from '@/lib/paths';
@@ -82,6 +85,8 @@ function ReaderShow({
     const [processingNoteId, setProcessingNoteId] = useState<number | null>(
         null,
     );
+    const [marginNotesExpanded, setMarginNotesExpanded] = useState(true);
+    const [hoveredNoteId, setHoveredNoteId] = useState<number | null>(null);
     const [vocabOpen, setVocabOpen] = useState(false);
     const [numPages, setNumPages] = useState(0);
     const [currentPage, setCurrentPage] = useState(initialPage ?? 1);
@@ -212,6 +217,16 @@ function ReaderShow({
         };
     }, [currentPage, isPdf]);
 
+    const focusedNoteId = hoveredNoteId ?? activeNoteId;
+
+    useEffect(() => {
+        if (!isPdf) {
+            return;
+        }
+
+        setNoteQuoteFocus(readerContainerRef.current, focusedNoteId);
+    }, [focusedNoteId, isPdf, currentPage, notes]);
+
     const progressPercent = useMemo(() => {
         if (!isPdf || numPages === 0) {
             return userBook.progress_percent;
@@ -290,41 +305,55 @@ function ReaderShow({
         setPendingSelection(null);
     }
 
+    function applyNoteQuoteForPage(
+        page: number,
+        quotedText?: string,
+        noteId?: number,
+    ) {
+        if (!quotedText || !readerContainerRef.current) {
+            return;
+        }
+
+        const pageRoot = findPageRoot(readerContainerRef.current, page);
+
+        if (pageRoot) {
+            applyQuotedTextMark(pageRoot, quotedText, noteId);
+        }
+    }
+
     function openDraftNote(selection?: PdfTextSelection | null) {
         closeSelectionPopover();
         window.getSelection()?.removeAllRanges();
 
         const anchor = selection ?? lastPdfSelectionRef.current;
+        const page =
+            anchor?.page ??
+            parsePageFromCfi(anchor?.cfiStart ?? '') ??
+            currentPage;
 
         setDraftNote({
             quotedText: anchor?.text,
             anchorPercent: anchor?.anchorPercent ?? 10,
             cfiLocation:
-                anchor?.cfiStart ??
-                (isPdf ? `page:${currentPage}` : `page:${currentPage}`),
+                anchor?.cfiStart ?? `page:${currentPage}`,
         });
         setDraftContent('');
         setEditingNoteId(null);
+        setMarginNotesExpanded(true);
+
+        if (anchor?.text) {
+            applyNoteQuoteForPage(page, anchor.text, -1);
+        }
     }
 
     function cancelDraftNote() {
+        if (readerContainerRef.current) {
+            removeNoteQuoteMark(readerContainerRef.current, -1);
+        }
+
         setDraftNote(null);
         setDraftContent('');
         setProcessingNoteId(null);
-    }
-
-    function applyNoteQuoteMark(quotedText?: string) {
-        if (!quotedText || !readerContainerRef.current) {
-            return;
-        }
-
-        const pageRoot = readerContainerRef.current.querySelector(
-            `[data-page="${currentPage}"]`,
-        ) as HTMLElement | null;
-
-        if (pageRoot) {
-            applyQuotedTextMark(pageRoot, quotedText);
-        }
     }
 
     async function handleSaveDraftNote() {
@@ -344,10 +373,18 @@ function ReaderShow({
                 chapter_title: activeSection,
             });
 
+            if (readerContainerRef.current) {
+                removeNoteQuoteMark(readerContainerRef.current, -1);
+            }
+
             setNotes((previous) => [...previous, note]);
-            applyNoteQuoteMark(draftNote.quotedText);
+
+            const page = parsePageFromCfi(note.cfi_location ?? '') ?? currentPage;
+            applyNoteQuoteForPage(page, note.quoted_text ?? undefined, note.id);
+
             cancelDraftNote();
             setActiveNoteId(note.id);
+            setMarginNotesExpanded(true);
         } catch {
             toast.error('Gagal menyimpan komentar');
             setProcessingNoteId(null);
@@ -379,10 +416,16 @@ function ReaderShow({
         setProcessingNoteId(noteId);
 
         try {
+            const note = notes.find((item) => item.id === noteId);
+
             await deleteNote(noteId);
             setNotes((previous) =>
                 previous.filter((item) => item.id !== noteId),
             );
+
+            if (readerContainerRef.current && note?.quoted_text) {
+                removeNoteQuoteMark(readerContainerRef.current, noteId);
+            }
 
             if (activeNoteId === noteId) {
                 setActiveNoteId(null);
@@ -392,11 +435,28 @@ function ReaderShow({
                 setEditingNoteId(null);
             }
 
+            if (hoveredNoteId === noteId) {
+                setHoveredNoteId(null);
+            }
+
             setProcessingNoteId(null);
         } catch {
             toast.error('Gagal menghapus komentar');
             setProcessingNoteId(null);
         }
+    }
+
+    function handleNoteEdit(note: Note) {
+        const page = parsePageFromCfi(note.cfi_location ?? '');
+
+        if (page) {
+            navigateToPage(page);
+        }
+
+        setActiveNoteId(note.id);
+        setEditingNoteId(note.id);
+        setMarginNotesExpanded(true);
+        cancelDraftNote();
     }
 
     function navigateToPage(page: number) {
@@ -457,6 +517,7 @@ function ReaderShow({
         if (page) {
             navigateToPage(page);
             setActiveNoteId(note.id);
+            setMarginNotesExpanded(true);
         }
     }
 
@@ -680,6 +741,10 @@ function ReaderShow({
                         onBookmarkSelect={handleBookmarkSelect}
                         onHighlightSelect={handleHighlightSelect}
                         onNoteSelect={handleNoteSelect}
+                        onNoteEdit={handleNoteEdit}
+                        onNoteDelete={handleDeleteNote}
+                        onNoteHover={setHoveredNoteId}
+                        activeNoteId={activeNoteId}
                     />
                 )}
 
@@ -709,6 +774,8 @@ function ReaderShow({
                                 <MarginNotes
                                     notes={notes}
                                     currentPage={currentPage}
+                                    expanded={marginNotesExpanded}
+                                    onExpandedChange={setMarginNotesExpanded}
                                     draftNote={draftNote}
                                     draftContent={draftContent}
                                     editingNoteId={editingNoteId}
@@ -722,7 +789,16 @@ function ReaderShow({
                                     onNoteClick={(note) =>
                                         setActiveNoteId(note.id)
                                     }
-                                    onEditNote={setEditingNoteId}
+                                    onNoteHover={setHoveredNoteId}
+                                    onEditNote={(noteId) => {
+                                        const note = notes.find(
+                                            (item) => item.id === noteId,
+                                        );
+
+                                        if (note) {
+                                            handleNoteEdit(note);
+                                        }
+                                    }}
                                     onSaveNote={handleSaveNoteEdit}
                                     onCancelEditNote={() =>
                                         setEditingNoteId(null)

@@ -23,6 +23,8 @@ type MarginNoteCardProps = {
     processing?: boolean;
     theme?: ReaderTheme;
     onClick?: () => void;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
     onEdit: () => void;
     onSave: (content: string) => void;
     onCancelEdit: () => void;
@@ -59,6 +61,8 @@ function MarginNoteCard({
     processing = false,
     theme = 'sepia',
     onClick,
+    onMouseEnter,
+    onMouseLeave,
     onEdit,
     onSave,
     onCancelEdit,
@@ -86,6 +90,8 @@ function MarginNoteCard({
                 borderColor,
             }}
             onClick={onClick}
+            onMouseEnter={onMouseEnter}
+            onMouseLeave={onMouseLeave}
             onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                     onClick?.();
