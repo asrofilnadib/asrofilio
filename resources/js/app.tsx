@@ -5,7 +5,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { Toaster } from '@/components/ui/sonner';
-import { initTheme } from '@/lib/themes';
+import { initTheme, inertiaProgressColor } from '@/lib/themes';
 
 initTheme();
 
@@ -45,6 +45,6 @@ createInertiaApp({
         );
     },
     progress: {
-        color: '#7D7517',
+        color: inertiaProgressColor,
     },
 });

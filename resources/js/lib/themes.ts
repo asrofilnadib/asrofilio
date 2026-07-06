@@ -31,6 +31,9 @@ export const defaultTheme: ThemeId = 'folio';
 
 export const themeStorageKey = 'asrofilio-theme';
 
+/** Inertia progress bar color — resolves from the active theme's `--primary`. */
+export const inertiaProgressColor = 'var(--primary)';
+
 export function applyTheme(themeId: ThemeId): void {
     document.documentElement.setAttribute('data-theme', themeId);
     localStorage.setItem(themeStorageKey, themeId);
