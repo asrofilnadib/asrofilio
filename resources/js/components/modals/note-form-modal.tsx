@@ -22,6 +22,8 @@ type NoteFormModalProps = {
     userBookId?: number;
     cfiLocation?: string;
     chapterTitle?: string;
+    quotedText?: string;
+    anchorPercent?: number;
     onSuccess?: () => void;
 };
 
@@ -33,6 +35,8 @@ function NoteFormModal({
     userBookId,
     cfiLocation,
     chapterTitle,
+    quotedText,
+    anchorPercent,
     onSuccess,
 }: NoteFormModalProps) {
     const isEditing = Boolean(note);
@@ -86,6 +90,20 @@ function NoteFormModal({
                                     type="hidden"
                                     name="chapter_title"
                                     value={chapterTitle}
+                                />
+                            )}
+                            {quotedText && (
+                                <input
+                                    type="hidden"
+                                    name="quoted_text"
+                                    value={quotedText}
+                                />
+                            )}
+                            {anchorPercent !== undefined && (
+                                <input
+                                    type="hidden"
+                                    name="anchor_percent"
+                                    value={anchorPercent}
                                 />
                             )}
                             <div className="space-y-2">

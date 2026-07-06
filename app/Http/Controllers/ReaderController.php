@@ -40,11 +40,16 @@ class ReaderController extends Controller
             ->where('user_id', $user->id)
             ->get();
 
+        $notes = $book->notes()
+            ->where('user_id', $user->id)
+            ->get();
+
         return Inertia::render('reader/show', [
             'book' => $book,
             'userBook' => $userBook,
             'highlights' => $highlights,
             'bookmarks' => $bookmarks,
+            'notes' => $notes,
             'fileUrl' => route('reader.file', $book),
             'fileType' => $book->file_type?->value ?? 'pdf',
             'chapters' => $book->chapters()

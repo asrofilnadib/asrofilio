@@ -15,6 +15,8 @@ use Illuminate\Support\Carbon;
  * @property int $book_id
  * @property int|null $user_book_id
  * @property string $content
+ * @property string|null $quoted_text
+ * @property int|null $anchor_percent
  * @property string|null $cfi_location
  * @property string|null $chapter_title
  * @property Carbon|null $created_at
@@ -25,6 +27,8 @@ use Illuminate\Support\Carbon;
     'book_id',
     'user_book_id',
     'content',
+    'quoted_text',
+    'anchor_percent',
     'cfi_location',
     'chapter_title',
 ])]

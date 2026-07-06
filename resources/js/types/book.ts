@@ -101,6 +101,8 @@ export type Note = {
     book_id: number;
     user_book_id?: number | null;
     content: string;
+    quoted_text?: string | null;
+    anchor_percent?: number | null;
     cfi_location?: string | null;
     chapter_title?: string | null;
     book?: Book;

@@ -1,13 +1,22 @@
 import type { Highlight } from '@/types/book';
 
+import { DEFAULT_HIGHLIGHT_COLOR } from '@/lib/highlight-colors';
+
+export type PdfSelectionRect = {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+};
+
 export type PdfTextSelection = {
     text: string;
     page: number;
     cfiStart: string;
     cfiEnd: string;
+    rect: PdfSelectionRect;
+    anchorPercent: number;
 };
-
-const DEFAULT_HIGHLIGHT_COLOR = '#fef08a';
 
 function hashText(text: string): string {
     let hash = 0;
@@ -30,7 +39,38 @@ export function parsePageFromCfi(cfi: string): number | null {
     return match ? Number.parseInt(match[1], 10) : null;
 }
 
-export function getPdfTextSelection(fallbackPage: number): PdfTextSelection | null {
+function resolvePageContainer(textLayer: Element): HTMLElement | null {
+    return textLayer.closest('[data-page]') as HTMLElement | null;
+}
+
+function buildSelectionMetrics(
+    range: Range,
+    pageElement: HTMLElement,
+): { rect: PdfSelectionRect; anchorPercent: number } {
+    const selectionRect = range.getBoundingClientRect();
+    const pageRect = pageElement.getBoundingClientRect();
+    const top = selectionRect.top - pageRect.top;
+    const left = selectionRect.left - pageRect.left;
+    const height = pageRect.height > 0 ? pageRect.height : 1;
+    const anchorPercent = Math.max(
+        0,
+        Math.min(100, Math.round((top / height) * 100)),
+    );
+
+    return {
+        rect: {
+            top,
+            left,
+            width: selectionRect.width,
+            height: selectionRect.height,
+        },
+        anchorPercent,
+    };
+}
+
+export function getPdfTextSelection(
+    fallbackPage: number,
+): PdfTextSelection | null {
     const selection = window.getSelection();
 
     if (!selection || selection.isCollapsed) {
@@ -52,7 +92,12 @@ export function getPdfTextSelection(fallbackPage: number): PdfTextSelection | nu
         return null;
     }
 
-    const pageElement = textLayer.closest('[data-page]');
+    const pageElement = resolvePageContainer(textLayer);
+
+    if (!pageElement) {
+        return null;
+    }
+
     const page = pageElement
         ? Number.parseInt(pageElement.getAttribute('data-page') ?? '', 10)
         : fallbackPage;
@@ -62,12 +107,15 @@ export function getPdfTextSelection(fallbackPage: number): PdfTextSelection | nu
     }
 
     const cfi = buildPdfCfi(page, text);
+    const { rect, anchorPercent } = buildSelectionMetrics(range, pageElement);
 
     return {
         text,
         page,
         cfiStart: cfi,
         cfiEnd: cfi,
+        rect,
+        anchorPercent,
     };
 }
 
