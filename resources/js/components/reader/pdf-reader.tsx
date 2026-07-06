@@ -193,26 +193,6 @@ function PdfReader({
     );
 
     useEffect(() => {
-        if (settings.readingMode !== 'paged') {
-            return;
-        }
-
-        function handleKeyDown(event: KeyboardEvent) {
-            if (event.key === 'ArrowLeft') {
-                goToPage(currentPage - 1);
-            }
-
-            if (event.key === 'ArrowRight') {
-                goToPage(currentPage + 1);
-            }
-        }
-
-        window.addEventListener('keydown', handleKeyDown);
-
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [currentPage, goToPage, settings.readingMode]);
-
-    useEffect(() => {
         if (settings.readingMode !== 'continuous' || !scrollRef.current) {
             return;
         }

@@ -17,6 +17,7 @@ import {
     readerMutedForeground,
     readerToolbarBackground,
 } from '@/lib/reader-theme';
+import { cn } from '@/lib/utils';
 import { paths } from '@/lib/paths';
 import type { Book } from '@/types/book';
 import type { PdfReaderSettings } from '@/types/reader';
@@ -31,7 +32,8 @@ type ReaderToolbarProps = {
     onSettingsChange: (settings: PdfReaderSettings) => void;
     onAddNote?: () => void;
     onAddHighlight?: () => void;
-    onAddBookmark?: () => void;
+    onToggleBookmark?: () => void;
+    isBookmarked?: boolean;
     onPrevPage?: () => void;
     onNextPage?: () => void;
     isPdf?: boolean;
@@ -47,7 +49,8 @@ function ReaderToolbar({
     onSettingsChange,
     onAddNote,
     onAddHighlight,
-    onAddBookmark,
+    onToggleBookmark,
+    isBookmarked = false,
     onPrevPage,
     onNextPage,
     isPdf = false,
@@ -156,10 +159,15 @@ function ReaderToolbar({
                     variant="ghost"
                     size="icon"
                     style={{ color: foreground }}
-                    onClick={onAddBookmark}
-                    title="Bookmark"
+                    onClick={onToggleBookmark}
+                    title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
                 >
-                    <Bookmark className="size-4" />
+                    <Bookmark
+                        className={cn(
+                            'size-4',
+                            isBookmarked && 'fill-current',
+                        )}
+                    />
                 </Button>
                 <ReaderSettingsPanel
                     settings={settings}

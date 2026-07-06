@@ -77,6 +77,7 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/user-books/{userBook}', [UserBookController::class, 'update'])->name('user-books.update');
     Route::delete('/user-books/{userBook}', [UserBookController::class, 'destroy'])->name('user-books.destroy');
     Route::post('/user-books/{userBook}/bookmark', [BookmarkController::class, 'store'])->name('user-books.bookmark.store');
+    Route::delete('/bookmarks/{bookmark}', [BookmarkController::class, 'destroy'])->name('bookmarks.destroy');
 });
 
 Route::prefix('admin')

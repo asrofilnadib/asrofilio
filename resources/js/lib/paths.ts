@@ -14,6 +14,7 @@ export const paths = {
     userBooks: '/user-books',
     userBook: (id: number | string) => `/user-books/${id}`,
     userBookBookmark: (id: number | string) => `/user-books/${id}/bookmark`,
+    bookmark: (id: number | string) => `/bookmarks/${id}`,
     addToLibrary: (bookUuid: string) => `/library/${bookUuid}`,
     notes: '/notes',
     note: (id: number | string) => `/notes/${id}`,

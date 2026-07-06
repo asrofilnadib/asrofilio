@@ -108,6 +108,28 @@ function ReaderShow({
         return Math.round((currentPage / numPages) * 100);
     }, [currentPage, isPdf, numPages, userBook.progress_percent]);
 
+    const currentLocationRef = useMemo(() => {
+        if (isPdf) {
+            return `page:${currentPage}`;
+        }
+
+        return typeof location === 'string' ? location : null;
+    }, [currentPage, isPdf, location]);
+
+    const currentBookmark = useMemo(() => {
+        if (!currentLocationRef) {
+            return null;
+        }
+
+        return (
+            bookmarks.find(
+                (bookmark) => bookmark.cfi_location === currentLocationRef,
+            ) ?? null
+        );
+    }, [bookmarks, currentLocationRef]);
+
+    const isBookmarked = currentBookmark !== null;
+
     const activeSection = useMemo(() => {
         if (!isPdf) {
             return null;
@@ -178,15 +200,50 @@ function ReaderShow({
         }
     }
 
-    function goToPage(delta: number) {
-        const next = Math.max(
-            1,
-            Math.min(currentPage + delta, numPages || currentPage + delta),
-        );
-        setCurrentPage(next);
-        setLocation(next);
-        savePdfProgress(next, numPages);
-    }
+    const navigatePage = useCallback(
+        (delta: number) => {
+            const next = Math.max(
+                1,
+                Math.min(currentPage + delta, numPages || currentPage + delta),
+            );
+            setCurrentPage(next);
+            setLocation(next);
+            savePdfProgress(next, numPages);
+        },
+        [currentPage, numPages, savePdfProgress],
+    );
+
+    useEffect(() => {
+        if (!isPdf) {
+            return;
+        }
+
+        function handleKeyDown(event: KeyboardEvent) {
+            const target = event.target;
+
+            if (
+                target instanceof HTMLInputElement ||
+                target instanceof HTMLTextAreaElement ||
+                (target instanceof HTMLElement && target.isContentEditable)
+            ) {
+                return;
+            }
+
+            if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                navigatePage(-1);
+            }
+
+            if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                navigatePage(1);
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isPdf, navigatePage]);
 
     function handleAddHighlight() {
         if (!isPdf) {
@@ -225,7 +282,24 @@ function ReaderShow({
         );
     }
 
-    function handleAddBookmark() {
+    function handleToggleBookmark() {
+        if (currentBookmark) {
+            router.delete(paths.bookmark(currentBookmark.id), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setBookmarks((previous) =>
+                        previous.filter(
+                            (bookmark) => bookmark.id !== currentBookmark.id,
+                        ),
+                    );
+                    toast.success('Bookmark removed');
+                },
+                onError: () => toast.error('Could not remove bookmark'),
+            });
+
+            return;
+        }
+
         const pageRef = isPdf ? `page:${currentPage}` : undefined;
         const cfiLocation =
             typeof location === 'string' ? location : pageRef;
@@ -267,11 +341,12 @@ function ReaderShow({
                 isPdf={isPdf}
                 settings={settings}
                 onSettingsChange={setSettings}
-                onPrevPage={() => goToPage(-1)}
-                onNextPage={() => goToPage(1)}
+                onPrevPage={() => navigatePage(-1)}
+                onNextPage={() => navigatePage(1)}
                 onAddNote={() => setNoteOpen(true)}
                 onAddHighlight={handleAddHighlight}
-                onAddBookmark={handleAddBookmark}
+                onToggleBookmark={handleToggleBookmark}
+                isBookmarked={isBookmarked}
             />
 
             <div className="flex flex-1 overflow-hidden">

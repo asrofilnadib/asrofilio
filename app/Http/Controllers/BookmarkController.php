@@ -33,6 +33,15 @@ class BookmarkController extends Controller
         return back()->with('success', 'Bookmark saved.');
     }
 
+    public function destroy(Bookmark $bookmark): RedirectResponse
+    {
+        $this->authorize('delete', $bookmark);
+
+        $bookmark->delete();
+
+        return back()->with('success', 'Bookmark removed.');
+    }
+
     /**
      * @param  array<string, mixed>  $validated
      */
