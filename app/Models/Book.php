@@ -116,7 +116,11 @@ class Book extends Model
     {
         return Attribute::get(function (): ?string {
             if ($this->cover_path !== null && Storage::disk('local')->exists($this->cover_path)) {
-                return route('books.cover', $this);
+                if ($this->uuid !== null) {
+                    return route('books.cover', $this);
+                }
+
+                return null;
             }
 
             if (is_array($this->metadata) && ! empty($this->metadata['cover_url'])) {

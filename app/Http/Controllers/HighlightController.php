@@ -20,7 +20,7 @@ class HighlightController extends Controller
 
         $highlights = $request->user()
             ->highlights()
-            ->with('book:id,title,author,cover_path')
+            ->with('book:id,uuid,title,author,cover_path,metadata')
             ->when($request->filled('book_id'), fn ($q) => $q->where('book_id', $request->integer('book_id')))
             ->latest()
             ->paginate(20)
